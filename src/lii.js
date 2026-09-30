@@ -176,5 +176,6 @@ async function scrape(doc, url) {
 	}
 	item.url = url.replace(/[?#].*$/, '');
 	item.libraryCatalog = 'Legal Information Institute';
+	addSnapshot(item, doc);
 	item.complete();
 }

@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 02:01:55"
+	"lastUpdated": "2026-09-30 02:06:31"
 }
 
 /*
@@ -353,6 +353,11 @@ function findAuthor(text) {
 
 // Book-section treatises: parsed = { kind: 'treatise', title, bookTitle, volume, section, edition, date, author }
 
+// Save the page itself with the item
+function addSnapshot(item, doc) {
+	item.attachments.push({ title: 'Snapshot', document: doc });
+}
+
 
 // Header markup (Westlaw Edge / Advantage document pages), checked against saved pages:
 //   #title (name), #co_docHeaderCitation > #courtline, #filedate, #cite0 #cite1 ... (cases)
@@ -526,5 +531,6 @@ async function scrape(doc, url) {
 	var item = buildItem(c.parsed, c.extra);
 	item.url = url.replace(/[?#].*$/, '');
 	item.libraryCatalog = 'Westlaw';
+	addSnapshot(item, doc);
 	item.complete();
 }

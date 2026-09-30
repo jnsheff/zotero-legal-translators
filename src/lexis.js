@@ -117,5 +117,6 @@ async function scrape(doc, url) {
 	var item = buildItem(c.parsed, c.extra);
 	// Lexis URLs are long session links that do not work for anyone else, so none is saved
 	item.libraryCatalog = 'Lexis+';
+	addSnapshot(item, doc);
 	item.complete();
 }

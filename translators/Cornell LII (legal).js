@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 02:03:30"
+	"lastUpdated": "2026-09-30 02:06:31"
 }
 
 /*
@@ -353,6 +353,11 @@ function findAuthor(text) {
 
 // Book-section treatises: parsed = { kind: 'treatise', title, bookTitle, volume, section, edition, date, author }
 
+// Save the page itself with the item
+function addSnapshot(item, doc) {
+	item.attachments.push({ title: 'Snapshot', document: doc });
+}
+
 
 // Cornell Legal Information Institute: the primary-source collections (U.S. Code, CFR, Supreme Court opinions,
 // the Constitution, the federal rules, the UCC and state regulations). Secondary material (Wex, CONAN, the
@@ -530,5 +535,6 @@ async function scrape(doc, url) {
 	}
 	item.url = url.replace(/[?#].*$/, '');
 	item.libraryCatalog = 'Legal Information Institute';
+	addSnapshot(item, doc);
 	item.complete();
 }

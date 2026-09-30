@@ -334,3 +334,8 @@ function findAuthor(text) {
 }
 
 // Book-section treatises: parsed = { kind: 'treatise', title, bookTitle, volume, section, edition, date, author }
+
+// Save the page itself with the item
+function addSnapshot(item, doc) {
+	item.attachments.push({ title: 'Snapshot', document: doc });
+}

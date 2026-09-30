@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 02:01:55"
+	"lastUpdated": "2026-09-30 02:06:31"
 }
 
 /*
@@ -353,6 +353,11 @@ function findAuthor(text) {
 
 // Book-section treatises: parsed = { kind: 'treatise', title, bookTitle, volume, section, edition, date, author }
 
+// Save the page itself with the item
+function addSnapshot(item, doc) {
+	item.attachments.push({ title: 'Snapshot', document: doc });
+}
+
 
 // Selectors marked (*) are the ones the existing Lexis+ translator in Zotero's repository uses;
 // the rest are guesses. The title and citation text are parsed with the shared code.
@@ -471,5 +476,6 @@ async function scrape(doc, url) {
 	var item = buildItem(c.parsed, c.extra);
 	// Lexis URLs are long session links that do not work for anyone else, so none is saved
 	item.libraryCatalog = 'Lexis+';
+	addSnapshot(item, doc);
 	item.complete();
 }

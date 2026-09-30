@@ -172,5 +172,6 @@ async function scrape(doc, url) {
 	var item = buildItem(c.parsed, c.extra);
 	item.url = url.replace(/[?#].*$/, '');
 	item.libraryCatalog = 'Westlaw';
+	addSnapshot(item, doc);
 	item.complete();
 }

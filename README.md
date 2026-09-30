@@ -55,6 +55,9 @@ docket number and decision date; older opinions also get the U.S. Reports citati
 docket number, because LII pages for them give no U.S. Reports cite. The list page "Cases for 347 U.S. 483" shows
 the item picker. Wex, CONAN and the Supreme Court Bulletin are not primary sources and are ignored.
 
+All three translators attach a Snapshot of the page. Note that Westlaw and Lexis pages show your client ID and
+account name, so their snapshots contain them.
+
 ## Install
 
 Copy the two `.js` files from `translators/` into Zotero's `translators` directory (Zotero > Settings >

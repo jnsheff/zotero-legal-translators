@@ -8,7 +8,7 @@ async function load(path) {
   const src = await (await fetch('../' + path, { cache: 'no-store' })).text();
   const body = src.slice(src.indexOf('\n}\n') + 3); // after the JSON header
   const items = [], picks = [];
-  const Zotero = { debug() {}, Item: class { constructor(t) { this.itemType = t; this.creators = []; this.tags = []; this.notes = []; } complete() { items.push(this); } },
+  const Zotero = { debug() {}, Item: class { constructor(t) { this.itemType = t; this.creators = []; this.tags = []; this.notes = []; this.attachments = []; } complete() { items.push(this); } },
     selectItems: async (o) => { picks.push(Object.keys(o).length); return o; } };
   const doc = async (name) => new DOMParser().parseFromString(await (await fetch('../fixtures/' + name, { cache: 'no-store' })).text(), 'text/html');
   const requestDocument = async (u) => doc(/westlaw\.com/.test(u) ? 'westlaw-case.html' : u.split('/').pop());
@@ -116,7 +116,8 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       eq(pick(L.items[L.items.length - 1], ['itemType', 'caseName', 'court', 'reporter', 'reporterVolume', 'firstPage', 'dateDecided', 'docketNumber']), Object.assign({ itemType: 'case', court: 'U.S.' }, want), 'LII ' + n);
     }
     const ld = await L.doc('lii-cases-347-483.html'); eq(L.T.detectWeb(ld, B + '/supremecourt/text/347/483'), 'multiple', 'LII case list');
-    await L.T.doWeb(ld, B + '/supremecourt/text/347/483'); eq(L.picks, [2], 'LII case list: two candidates');
+    { const before = L.items.length; await L.T.doWeb(ld, B + '/supremecourt/text/347/483'); }
+    if (L.items.some(i => i.attachments.length !== 1)) errors.push('LII item without a snapshot'); eq(L.picks, [2], 'LII case list: two candidates');
     eq(L.T.detectWeb(await L.doc('other.html'), B + '/wex/trademark'), false, 'LII Wex is not a primary source');
     eq(L.T.detectWeb(ld, B + '/supct/cert/22-174'), false, 'LII bulletin is not a primary source');
     for (const [a, b] of [['Jane ROE, et al., Appellants, v. Henry WADE.', 'Roe v. Wade'], ['GROFF v. DeJOY', 'Groff v. DeJoy'], ['UNITED STATES v. ALVAREZ', 'United States v. Alvarez'],
@@ -211,6 +212,8 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     await RX.T.doWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'); real += '; Lexis statute, results (' + RX.picks[0] + ' results)';
     if (RX.picks[0] !== 10) errors.push('real Lexis results: only ' + RX.picks[0]);
   }
+  { const all = [...w.items, ...x.items]; const bad = all.filter(i => !(i.attachments.length === 1 && i.attachments[0].title === 'Snapshot' && i.attachments[0].document && i.attachments[0].document.nodeType === 9));
+    if (bad.length) errors.push('items without a snapshot of the page: ' + bad.length + ' of ' + all.length); }
   document.getElementById('out').textContent = errors.length ? 'HARNESS FAILED\n' + errors.join('\n') : 'HARNESS OK (' + real + '; ' + w.items.length + ' + ' + x.items.length + ' items)';
 })().catch(e => { document.getElementById('out').textContent = 'HARNESS FAILED\nexception: ' + e.stack; });
 </script>
