@@ -19,7 +19,7 @@ function readPage(doc) {
 	var infos = doc.querySelectorAll(INFO_SEL), info = [];
 	for (var i = 0; i < infos.length; i++) info.push(spacedText(infos[i]));
 	var court = info[0] || '', title = cleanTitle(firstText(doc, TITLE_SEL));
-	var date = cleanDate(firstText(doc, DATE_SEL)) || findDate(info.join(' '));
+	var date = cleanDate(firstText(doc, DATE_SEL)) || findDate(info.join(' ')) || (info.filter(function (i) { return /^(?:\w+\.?,? )?\d{4}$|^[A-Z][a-z]+\.?,? \d{4}$/.test(i); })[0] || ''); // articles: "October, 2012"
 	return {
 		pageTitle: cleanTitle(doc.title),
 		title: title,
@@ -28,6 +28,7 @@ function readPage(doc) {
 		date: date,
 		info: info.join('\n'),
 		body: bodyAfter(doc, title),
+		author: findAuthor(bodyAfter(doc, title)),
 	};
 }
 
@@ -49,11 +50,9 @@ function detectWeb(doc, url) {
 // site), so ask the connector to run detection again when the page changes.
 function watchForChanges(doc) {
 	try {
-		// once per page: each call would otherwise add another observer
-		if (doc.body && !doc.body.getAttribute('data-zotero-legal-watch') && typeof Z !== 'undefined' && Z.monitorDOMChanges) {
-			doc.body.setAttribute('data-zotero-legal-watch', '1');
-			Z.monitorDOMChanges(doc.body, { childList: true, subtree: true });
-		}
+		// Every time: the connector allows one observer and drops it after the first change, then runs
+		// detection again, so it has to be asked again on each run or later changes are missed.
+		if (doc.body && typeof Z !== 'undefined' && Z.monitorDOMChanges) Z.monitorDOMChanges(doc.body, { childList: true, subtree: true });
 	}
 	catch (e) {
 		Zotero.debug('Lexis (legal): monitorDOMChanges: ' + e);

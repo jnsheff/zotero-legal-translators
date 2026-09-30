@@ -110,7 +110,7 @@ function fixCase(s) {
 	s = squash(s);
 	var letters = s.replace(/[^A-Za-z]/g, ''), upper = s.replace(/[^A-Z]/g, '');
 	if (letters.length > 3 && upper.length / letters.length > 0.8) {
-		s = ZU.capitalizeTitle(s.toLowerCase(), true).replace(/\s[Vv]\.?\s/g, ' v. ');
+		s = ZU.capitalizeTitle(s.toLowerCase(), true).replace(/\s[Vv]\.?\s/g, ' v. ').replace(/\bMc([a-z])/g, function (x, c) { return 'Mc' + c.toUpperCase(); });
 	}
 	return s;
 }
@@ -273,7 +273,8 @@ function classify(page) {
 		parsed = { kind: 'case', name: page.title, volume: bare.volume, reporter: bare.reporter, page: bare.page, court: pp.court || page.court, date: pp.date, year: pp.year };
 	}
 	else if (bare && page.title && NOT_A_CASE_RE.test(bare.reporter)) {
-		parsed = { kind: 'article', author: '', title: page.title, volume: bare.volume, reporter: bare.reporter, page: bare.page, year: findDate(page.date).slice(-4) };
+		var my = new RegExp('(' + MONTHS + ')\\.?,?\\s+(?:\\d{1,2},?\\s+)?(\\d{4})', 'i').exec(page.date || '');
+		parsed = { kind: 'article', author: page.author || '', title: page.title, volume: bare.volume, reporter: bare.reporter, page: bare.page, year: my ? my[2] : (/\b(\d{4})\b/.exec(page.date || '') || [])[1] || '', date: my ? my[1].replace(/\.$/, '') + ' ' + my[2] : '' };
 	}
 	for (var i = 0; !parsed && i < tries.length; i++) parsed = tries[i] && parseCitation(tries[i]);
 
@@ -298,3 +299,9 @@ function statuteResult(st, page, date) {
 }
 
 var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle' };
+
+// "Author: Jeremy N. Sheff * * Associate Professor..." (Lexis) -> "Jeremy N. Sheff"
+function findAuthor(text) {
+	var m = /\bAuthors?:\s*(.+?)(?=\s+\*|\s+Text\b|\s+Length:|\s+Source:|$)/.exec(squash(text));
+	return m ? squash(m[1]).replace(/[\s*\u2020\u2021\d]+$/, '') : '';
+}

@@ -2,7 +2,7 @@
 <script>
 // Runs the built translators against fixtures with mocks of Zotero's translator API.
 const WL = 'translators/Westlaw (legal).js', LX = 'translators/Lexis+ (legal).js';
-const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]+/g, (w, i) => i > 0 && /^(and|of|the|a|an|in|on|for|to|or|v)$/.test(w) ? w : w[0].toUpperCase() + w.slice(1)),
+const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]+/g, (w, i) => i > 0 && !/:\s$/.test(s.slice(0, i)) && /^(and|of|the|a|an|in|on|for|to|or|v)$/.test(w) ? w : w[0].toUpperCase() + w.slice(1)),
   cleanAuthor: a => { const p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: 'author' }; } };
 async function load(path) {
   const src = await (await fetch('../' + path, { cache: 'no-store' })).text();
@@ -70,13 +70,17 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(x.T.detectWeb(await x.doc('lexis-statute.html'), LU), 'statute', 'LX statute'); await x.T.doWeb(await x.doc('lexis-statute.html'), LU);
   eq(pick(x.items[1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '47', section: '230' }, 'LX statute item');
   { const d = await x.doc('lexis-case.html'); const before = x.Z.calls; x.T.detectWeb(d, LU); x.T.detectWeb(d, LU); x.T.detectWeb(d, LU);
-    eq(x.Z.calls - before, 1, 'the DOM observer is requested once per page, however often detectWeb runs'); }
+    eq(x.Z.calls - before, 3, 'the DOM observer is requested on every detectWeb run (the connector drops it after one change)'); }
   for (const n of ['lexis-regulation.html', 'lexis-regulation2.html']) {
     eq(x.T.detectWeb(await x.doc(n), LU), 'statute', n + ' is a statute, not a case'); await x.T.doWeb(await x.doc(n), LU);
     eq(pick(x.items[x.items.length - 1], ['itemType', 'code', 'codeNumber', 'section']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108' }, n + ' item');
     if (n === 'lexis-regulation.html') eq(x.items[x.items.length - 1].nameOfAct, 'Institution of inter partes review', 'regulation name from the heading');
   }
-  x.items.splice(2, 2); // keep the count below
+  eq(x.T.detectWeb(await x.doc('lexis-article.html'), LU), 'journalArticle', 'LX article'); await x.T.doWeb(await x.doc('lexis-article.html'), LU);
+  { const a = x.items[x.items.length - 1];
+    eq(pick(a, ['title', 'publicationTitle', 'volume', 'pages', 'date']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harv. L. Rev.', volume: '113', pages: '501', date: 'April 2000' }, 'LX article item');
+    eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Lawrence|Lessig'], 'LX article author'); }
+  x.items.splice(2, 3); // keep the count below
   eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
   await x.T.doWeb(await x.doc('lexis-results.html'), LU);
   eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
@@ -136,6 +140,14 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       eq(RX.T.detectWeb(rd, u), 'statute', 'real Lexis regulation detect'); await RX.T.doWeb(rd, u);
       eq(pick(RX.items[RX.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review' }, 'real Lexis regulation item');
       RX.items.pop();
+    }
+    const rar = await fetch('../test pages/lexis-article.html', { cache: 'no-store' });
+    if (rar.ok) {
+      const rd = new DOMParser().parseFromString(await rar.text(), 'text/html');
+      eq(RX.T.detectWeb(rd, u), 'journalArticle', 'real Lexis article detect'); await RX.T.doWeb(rd, u);
+      const a = RX.items.pop();
+      eq(pick(a, ['itemType', 'title', 'publicationTitle', 'volume', 'pages', 'date']), { itemType: 'journalArticle', title: 'Response: Accentuate the Normative: A Response to Professor McKenna', publicationTitle: 'Va. L. Rev. In Brief', volume: '98', pages: '48', date: 'October 2012' }, 'real Lexis article item');
+      eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Jeremy N.|Sheff'], 'real Lexis article author');
     }
     const ll = await rlp('list'); eq(RX.T.detectWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'), 'multiple', 'real Lexis results detect');
     await RX.T.doWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'); real += '; Lexis statute, results (' + RX.picks[0] + ' results)';
