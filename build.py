@@ -6,6 +6,7 @@ shared = open(f'{root}/src/shared.js').read()
 LICENSE = "\n/*\n\tMIT License. Copyright (c) 2026 jnsheff. See LICENSE in the repository.\n*/\n\n"
 T = {
   'Westlaw': dict(translatorID='8c959974-3afc-4f7e-afd0-20e7bc3c19c1', label='Westlaw (legal)', target=r'^https?://(?:[a-z0-9-]+\.)*westlaw\.com/', src='westlaw.js'),
+  'LII': dict(translatorID='2b8c3a5e-7d41-4c8e-9a53-6e0f1d2c9b74', label='Cornell LII (legal)', target=r'^https?://(?:www\.)?law\.cornell\.edu/', src='lii.js'),
   'Lexis': dict(translatorID='4a07416a-1dde-4a8e-b9a1-7aa69007af19', label='Lexis+ (legal)', target=r'^https?://(?:plus|advance)\.lexis\.com/', src='lexis.js'),
 }
 bad = 0

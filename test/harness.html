@@ -1,7 +1,7 @@
 <!doctype html><meta charset=utf-8><title>translator harness</title><pre id=out>running…</pre>
 <script>
 // Runs the built translators against fixtures with mocks of Zotero's translator API.
-const WL = 'translators/Westlaw (legal).js', LX = 'translators/Lexis+ (legal).js';
+const WL = 'translators/Westlaw (legal).js', LX = 'translators/Lexis+ (legal).js', LI = 'translators/Cornell LII (legal).js';
 const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]+/g, (w, i) => i > 0 && !/:\s$/.test(s.slice(0, i)) && /^(and|of|the|a|an|in|on|for|to|or|v)$/.test(w) ? w : w[0].toUpperCase() + w.slice(1)),
   cleanAuthor: (a, t) => { const p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: t }; } };
 async function load(path) {
@@ -13,15 +13,16 @@ async function load(path) {
   const doc = async (name) => new DOMParser().parseFromString(await (await fetch('../fixtures/' + name, { cache: 'no-store' })).text(), 'text/html');
   const requestDocument = async (u) => doc(/westlaw\.com/.test(u) ? 'westlaw-case.html' : u.split('/').pop());
   const Z = { calls: 0, monitorDOMChanges() { this.calls++; } };
-  const T = new Function('Zotero', 'ZU', 'requestDocument', 'Z', body + ';return { detectWeb, doWeb };')(Zotero, ZU, requestDocument, Z);
+  const T = new Function('Zotero', 'ZU', 'requestDocument', 'Z', body + ';return { detectWeb, doWeb, caseName: typeof caseName === "function" ? caseName : null };')(Zotero, ZU, requestDocument, Z);
   return { T, items, picks, doc, Z };
 }
 const errors = [];
-const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) errors.push(m + ': got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b)); };
+const stable = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(y => [y, x[y]])) : x);
+const eq = (a, b, m) => { if (stable(a) !== stable(b)) errors.push(m + ': got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b)); };
 const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
 (async () => {
   // header sanity: the target regex matches what it should
-  for (const [p, yes, no] of [[WL, 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html', 'https://example.com/westlaw.com'], [LX, 'https://plus.lexis.com/api/document?x=1', 'https://www.lexisnexis.com/']]) {
+  for (const [p, yes, no] of [[WL, 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html', 'https://example.com/westlaw.com'], [LX, 'https://plus.lexis.com/api/document?x=1', 'https://www.lexisnexis.com/'], [LI, 'https://www.law.cornell.edu/uscode/text/15/1125', 'https://example.com/law.cornell.edu/']]) {
     const h = JSON.parse((await (await fetch('../' + p, { cache: 'no-store' })).text()).split('\n}\n')[0] + '\n}');
     if (!new RegExp(h.target).test(yes)) errors.push(p + ': target misses ' + yes);
     if (new RegExp(h.target).test(no)) errors.push(p + ': target matches ' + no);
@@ -94,6 +95,35 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
   await w.T.doWeb(await w.doc('westlaw-list.html'), L).catch(e => errors.push('WL list scrape: ' + e.message));
   eq(w.picks, [2], 'WL list: duplicates and snippet links collapsed');
+  // Cornell LII
+  { const L = await load(LI), B = 'https://www.law.cornell.edu';
+    const S = (n, p, want, m) => (async () => {
+      const d = await L.doc('lii-' + n + '.html'); eq(L.T.detectWeb(d, B + p), 'statute', n + ' detect'); await L.T.doWeb(d, B + p);
+      eq(pick(L.items[L.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct', 'url', 'libraryCatalog']), Object.assign({ itemType: 'statute', codeNumber: '', url: B + p, libraryCatalog: 'Legal Information Institute' }, want), 'LII ' + n);
+    })();
+    await S('uscode-15-1125', '/uscode/text/15/1125', { code: 'U.S.C.', codeNumber: '15', section: '1125', nameOfAct: 'False designations of origin, false descriptions, and dilution forbidden' });
+    await S('uscode-42-1983', '/uscode/text/42/1983', { code: 'U.S.C.', codeNumber: '42', section: '1983', nameOfAct: 'Civil action for deprivation of rights' });
+    await S('cfr-37-42.108', '/cfr/text/37/42.108', { code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review' });
+    await S('frcp-11', '/rules/frcp/rule_11', { code: 'Fed. R. Civ. P.', section: '11', nameOfAct: 'Signing Pleadings, Motions, and Other Papers; Representations to the Court; Sanctions' });
+    await S('fre-801', '/rules/fre/rule_801', { code: 'Fed. R. Evid.', section: '801', nameOfAct: 'Definitions That Apply to This Article; Exclusions from Hearsay' });
+    await S('ucc-2-207', '/ucc/2/2-207', { code: 'U.C.C.', section: '2-207', nameOfAct: 'Additional Terms in Acceptance or Confirmation' });
+    await S('nycrr-2.1', '/regulations/new-york/10-NYCRR-2.1', { code: 'N.Y. Comp. Codes R. & Regs. tit. 10', section: '2.1', nameOfAct: 'Communicable diseases designated: cases, suspected cases and certain carriers to be reported to the state department of health' });
+    await S('constitution-amendxiv', '/constitution/amendmentxiv', { code: 'U.S. Const.', section: 'amend. XIV', nameOfAct: '14th Amendment' });
+    await S('constitution-articlei', '/constitution/articlei', { code: 'U.S. Const.', section: 'art. I', nameOfAct: 'Article I' });
+    for (const [n, p, want] of [['case-roe', '/supremecourt/text/410/113', { caseName: 'Roe v. Wade', reporter: 'U.S.', reporterVolume: '410', firstPage: '113', dateDecided: 'Jan. 22, 1973', docketNumber: '70-18' }],
+        ['case-groff', '/supremecourt/text/22-174', { caseName: 'Groff v. DeJoy', reporter: undefined, reporterVolume: undefined, firstPage: undefined, dateDecided: 'June 29, 2023', docketNumber: '22-174' }]]) {
+      const d = await L.doc('lii-' + n + '.html'); eq(L.T.detectWeb(d, B + p), 'case', n + ' detect'); await L.T.doWeb(d, B + p);
+      eq(pick(L.items[L.items.length - 1], ['itemType', 'caseName', 'court', 'reporter', 'reporterVolume', 'firstPage', 'dateDecided', 'docketNumber']), Object.assign({ itemType: 'case', court: 'U.S.' }, want), 'LII ' + n);
+    }
+    const ld = await L.doc('lii-cases-347-483.html'); eq(L.T.detectWeb(ld, B + '/supremecourt/text/347/483'), 'multiple', 'LII case list');
+    await L.T.doWeb(ld, B + '/supremecourt/text/347/483'); eq(L.picks, [2], 'LII case list: two candidates');
+    eq(L.T.detectWeb(await L.doc('other.html'), B + '/wex/trademark'), false, 'LII Wex is not a primary source');
+    eq(L.T.detectWeb(ld, B + '/supct/cert/22-174'), false, 'LII bulletin is not a primary source');
+    for (const [a, b] of [['Jane ROE, et al., Appellants, v. Henry WADE.', 'Roe v. Wade'], ['GROFF v. DeJOY', 'Groff v. DeJoy'], ['UNITED STATES v. ALVAREZ', 'United States v. Alvarez'],
+        ['BROWN ET AL. v. BOARD OF EDUCATION OF TOPEKA ET AL.', 'Brown v. Board of Education of Topeka'], ['Miranda v. Arizona', 'Miranda v. Arizona'],
+        ['Ford Motor Co. v. Montana Eighth Judicial District Court', 'Ford Motor Co. v. Montana Eighth Judicial District Court'], ['NATIONAL FEDERATION OF INDEPENDENT BUSINESS v. SEBELIUS', 'National Federation of Independent Business v. Sebelius']])
+      eq(L.T.caseName(a), b, 'case name ' + a);
+  }
   // Real saved Westlaw pages (kept out of git: test pages/); skipped when absent
   const RP = { article: 'MARKS, MORALS, AND MARKETS _ Secondary Sources _ National _ Westlaw Advantage', case: 'Fletcher v. Experian Information Solutions, Incorporated _ Cases _ Texas _ Westlaw Advantage', statute: '§ 50-f. Right of publicity _ Statutes _ New York _ Westlaw Advantage', list: 'Search Results _ ai hallucination _ Westlaw Advantage' };
   const rp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RP[k] + (k === 'article' ? '.htm' : '.html')), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };

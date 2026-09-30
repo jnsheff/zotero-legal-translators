@@ -5,6 +5,7 @@ Two Zotero web translators (for the Zotero Connector) that save legal sources fr
 | Translator | Sites | Saves |
 |---|---|---|
 | `Westlaw (legal).js` | `*.westlaw.com` (Westlaw Edge / Precision) | cases, statutes and regulations, law-review articles; search-result lists |
+| `Cornell LII (legal).js` | `law.cornell.edu` | the primary sources: U.S. Code, CFR, Supreme Court opinions, the Constitution, the federal rules, the UCC and state regulations |
 | `Lexis+ (legal).js` | `plus.lexis.com`, `advance.lexis.com` | the same |
 
 Cases fill Case Name, Reporter, Volume, First Page, Court, Date Decided, Docket Number (`WL` and `U.S. Dist. LEXIS`
@@ -42,6 +43,17 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
 
 Not handled: Lexis session laws and acts without a section number, secondary sources other than law-review
 articles, dockets and filings.
+
+### Cornell LII
+
+Pages are plain server-rendered HTML, so these were built and tested against copies of real public pages
+(`fixtures/lii-*.html`, trimmed). Statutes, regulations, rules, the Constitution and the UCC are saved as Statutes
+with Bluebook-style codes: `U.S.C.`, `C.F.R.`, `Fed. R. Civ. P.` (also Evid., App., Crim., Bankr., `Sup. Ct. R.`),
+`U.S. Const.` (section `art. I` / `amend. XIV`), `U.C.C.`, and state codes as LII prints them. Supreme Court
+opinions become Cases with a short Bluebook name ("Roe v. Wade"; roles, "et al." and given names are dropped),
+docket number and decision date; older opinions also get the U.S. Reports citation. Newer opinions carry only the
+docket number, because LII pages for them give no U.S. Reports cite. The list page "Cases for 347 U.S. 483" shows
+the item picker. Wex, CONAN and the Supreme Court Bulletin are not primary sources and are ignored.
 
 ## Install
 
