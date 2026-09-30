@@ -32,6 +32,19 @@ function readPage(doc) {
 }
 
 function detectWeb(doc, url) {
+	try {
+		var type = detect(doc, url);
+		Zotero.debug('Lexis (legal): detectWeb -> ' + type + ' for ' + url.replace(/[?#].*$/, ''));
+		if (!type) Zotero.debug('Lexis (legal): page read as ' + JSON.stringify(readPage(doc), function (k, v) { return k === 'body' ? undefined : v; }));
+		return type;
+	}
+	catch (e) {
+		Zotero.debug('Lexis (legal): detectWeb failed: ' + e + ' ' + (e && e.stack));
+		throw e;
+	}
+}
+
+function detect(doc, url) {
 	if (doc.title && /\bresults\b/i.test(doc.title) && getSearchResults(doc, true)) return 'multiple';
 	var c = classify(readPage(doc));
 	return c ? TYPE_OF[c.parsed.kind] : false;

@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 01:12:53"
+	"lastUpdated": "2026-09-30 01:19:27"
 }
 
 /*
@@ -384,6 +384,19 @@ function classifyWestlaw(page) {
 }
 
 function detectWeb(doc, url) {
+	try {
+		var type = detect(doc, url);
+		Zotero.debug('Westlaw (legal): detectWeb -> ' + type + ' for ' + url.replace(/[?#].*$/, ''));
+		if (!type) Zotero.debug('Westlaw (legal): page read as ' + JSON.stringify(readPage(doc), function (k, v) { return k === 'body' ? undefined : v; }));
+		return type;
+	}
+	catch (e) {
+		Zotero.debug('Westlaw (legal): detectWeb failed: ' + e + ' ' + (e && e.stack));
+		throw e;
+	}
+}
+
+function detect(doc, url) {
 	if (isListURL(url) && !isDocumentURL(url) && !doc.querySelector('#co_docHeaderCitation') && getSearchResults(doc, true)) return 'multiple';
 	if (!isDocumentURL(url) && !doc.querySelector('#co_docHeaderCitation')) return false;
 	var c = classifyWestlaw(readPage(doc));
