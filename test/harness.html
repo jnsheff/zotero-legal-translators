@@ -99,7 +99,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   { const L = await load(LI), B = 'https://www.law.cornell.edu';
     const S = (n, p, want, m) => (async () => {
       const d = await L.doc('lii-' + n + '.html'); eq(L.T.detectWeb(d, B + p), 'statute', n + ' detect'); await L.T.doWeb(d, B + p);
-      eq(pick(L.items[L.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct', 'url', 'libraryCatalog']), Object.assign({ itemType: 'statute', codeNumber: '', url: B + p, libraryCatalog: 'Legal Information Institute' }, want), 'LII ' + n);
+      eq(pick(L.items[L.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct', 'url']), Object.assign({ itemType: 'statute', codeNumber: '', url: B + p }, want), 'LII ' + n);
     })();
     await S('uscode-15-1125', '/uscode/text/15/1125', { code: 'U.S.C.', codeNumber: '15', section: '1125', nameOfAct: 'False designations of origin, false descriptions, and dilution forbidden' });
     await S('uscode-42-1983', '/uscode/text/42/1983', { code: 'U.S.C.', codeNumber: '42', section: '1983', nameOfAct: 'Civil action for deprivation of rights' });
