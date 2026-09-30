@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 00:51:23"
+	"lastUpdated": "2026-09-30 00:57:18"
 }
 
 /*
@@ -200,16 +200,17 @@ function buildItem(parsed, extra) {
 	}
 	if (parsed.kind === 'article') {
 		item = new Zotero.Item('journalArticle');
-		item.title = parsed.title;
+		item.title = fixCase(parsed.title);
 		if (parsed.author) {
-			parsed.author.split(/\s+(?:&|and)\s+/).forEach(function (a) {
-				item.creators.push(ZU.cleanAuthor(a, 'author'));
+			parsed.author.split(/\s*;\s*|\s+(?:&|and)\s+/).forEach(function (a) {
+				if (squash(a)) item.creators.push(ZU.cleanAuthor(squash(a), 'author'));
 			});
 		}
-		item.publicationTitle = parsed.reporter;
+		item.publicationTitle = parsed.publication || parsed.reporter;
+		if (parsed.publication) item.journalAbbreviation = parsed.reporter;
 		item.volume = parsed.volume;
 		item.pages = parsed.page;
-		item.date = parsed.year;
+		item.date = parsed.date || parsed.year;
 		return item;
 	}
 	item = new Zotero.Item('case');

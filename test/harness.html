@@ -2,7 +2,7 @@
 <script>
 // Runs the built translators against fixtures with mocks of Zotero's translator API.
 const WL = 'translators/Westlaw (legal).js', LX = 'translators/Lexis+ (legal).js';
-const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]/g, c => c.toUpperCase()),
+const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]+/g, (w, i) => i > 0 && /^(and|of|the|a|an|in|on|for|to|or|v)$/.test(w) ? w : w[0].toUpperCase() + w.slice(1)),
   cleanAuthor: a => { const p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: 'author' }; } };
 async function load(path) {
   const src = await (await fetch('../' + path, { cache: 'no-store' })).text();
@@ -38,7 +38,8 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   await w.T.doWeb(await w.doc('westlaw-statute-state.html'), D);
   eq(pick(w.items[3], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'N.Y. Civ. Rights Law', codeNumber: '', section: '50-f', nameOfAct: 'Right of publicity' }, 'WL state statute item');
   eq(w.T.detectWeb(await w.doc('westlaw-article.html'), D), 'journalArticle', 'WL article'); await w.T.doWeb(await w.doc('westlaw-article.html'), D);
-  eq(pick(w.items[4], ['title', 'publicationTitle', 'volume', 'pages']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harv. L. Rev.', volume: '113', pages: '501' }, 'WL article item');
+  eq(pick(w.items[4], ['title', 'publicationTitle', 'journalAbbreviation', 'volume', 'pages', 'date']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harvard Law Review', journalAbbreviation: 'Harv. L. Rev.', volume: '113', pages: '501', date: 'April 2000' }, 'WL article item');
+  eq(w.items[4].creators.map(c => c.firstName + '|' + c.lastName), ['Lawrence|Lessig'], 'WL article author');
   eq(w.T.detectWeb(await w.doc('other.html'), D), false, 'WL other document page');
   eq(w.T.detectWeb(await w.doc('other.html'), 'https://1.next.westlaw.com/Home.html'), false, 'WL home');
   const L = 'https://1.next.westlaw.com/Search/Results.html?query=x';
@@ -58,8 +59,8 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   await w.T.doWeb(await w.doc('westlaw-list.html'), L).catch(e => errors.push('WL list scrape: ' + e.message));
   eq(w.picks, [2], 'WL list: duplicates and snippet links collapsed');
   // Real saved Westlaw pages (kept out of git: test pages/); skipped when absent
-  const RP = { case: 'Fletcher v. Experian Information Solutions, Incorporated _ Cases _ Texas _ Westlaw Advantage', statute: '§ 50-f. Right of publicity _ Statutes _ New York _ Westlaw Advantage', list: 'Search Results _ ai hallucination _ Westlaw Advantage' };
-  const rp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RP[k] + '.html'), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };
+  const RP = { article: 'MARKS, MORALS, AND MARKETS _ Secondary Sources _ National _ Westlaw Advantage', case: 'Fletcher v. Experian Information Solutions, Incorporated _ Cases _ Texas _ Westlaw Advantage', statute: '§ 50-f. Right of publicity _ Statutes _ New York _ Westlaw Advantage', list: 'Search Results _ ai hallucination _ Westlaw Advantage' };
+  const rp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RP[k] + (k === 'article' ? '.htm' : '.html')), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };
   let real = 'real pages: skipped', rc = await rp('case');
   if (rc) {
     const RW = await load(WL), u = 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html?listSource=Search';
@@ -70,6 +71,12 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     eq(RW.T.detectWeb(rs, 'https://1.next.westlaw.com/Document/I1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e/View/FullText.html'), 'statute', 'real statute detect');
     await RW.T.doWeb(rs, 'https://1.next.westlaw.com/Document/I1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e/View/FullText.html');
     eq(pick(RW.items[1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'N.Y. Civ. Rights Law', codeNumber: '', section: '50-f', nameOfAct: 'Right of publicity' }, 'real statute item');
+    const ra = await rp('article'), au = 'https://1.next.westlaw.com/Document/If9416b51b20911e28578f7ccc38dcbee/View/FullText.html';
+    if (ra) {
+      eq(RW.T.detectWeb(ra, au), 'journalArticle', 'real article detect'); await RW.T.doWeb(ra, au);
+      eq(pick(RW.items[2], ['itemType', 'title', 'publicationTitle', 'journalAbbreviation', 'volume', 'pages', 'date']), { itemType: 'journalArticle', title: 'Marks, Morals, and Markets', publicationTitle: 'Stanford Law Review', journalAbbreviation: 'Stan. L. Rev.', volume: '65', pages: '761', date: 'April 2013' }, 'real article item');
+      eq(RW.items[2].creators.map(c => c.firstName + '|' + c.lastName), ['Jeremy N.|Sheff'], 'real article author');
+    }
     const rl = await rp('list'), lu = 'https://1.next.westlaw.com/Search/Results.html?query=ai%20hallucination&jurisdiction=ALLCASES';
     eq(RW.T.detectWeb(rl, lu), 'multiple', 'real list detect'); await RW.T.doWeb(rl, lu);
     const n = RW.picks[0];

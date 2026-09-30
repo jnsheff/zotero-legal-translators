@@ -24,6 +24,8 @@ function readPage(doc) {
 		cite: cites[0] || '',
 		court: firstText(doc, ['#courtline', '.co_courtLine']),
 		date: firstText(doc, ['#filedate', '#effectiveDate', '.co_dateLine']),
+		author: firstText(doc, ['#author']),
+		publication: firstText(doc, ['#pubname']),
 		codeSet: firstText(doc, ['#codeSetName']),
 		titleDesc: firstText(doc, ['#titleDesc']),
 		info: '',
@@ -48,9 +50,26 @@ function statuteFromHeader(page) {
 	return out;
 }
 
+// Law-review article: header has #cite "65 STNLR 761", #author, #pubname; the text starts "65 Stan. L. Rev. 761 Stanford Law Review April, 2013"
+function articleFromHeader(page) {
+	if (!page.publication || !page.title) return null;
+	var out = { kind: 'article', title: page.title, author: page.author, publication: page.publication, reporter: '', volume: '', page: '', year: '', date: '' };
+	var m = /^\s*(\d{1,4})\s+([A-Z][A-Za-z.&'\u2019 ]*?\.)\s+(\d{1,5})\b/.exec(page.body) || /^\s*(\d{1,4})\s+([A-Z][A-Za-z.&'\u2019 ]*?\.)\s+(\d{1,5})\b/.exec(page.body.replace(/^.*?(?=\b\d{1,4} [A-Z][a-z]*\. )/, ''));
+	var c = /^(\d{1,4})\s+\S+\s+(\d{1,5})$/.exec(page.cite);
+	if (m) { out.volume = m[1]; out.reporter = squash(m[2]); out.page = m[3]; }
+	else if (c) { out.volume = c[1]; out.page = c[2]; out.reporter = page.publication; }
+	else return null;
+	var after = page.body.slice(page.body.indexOf(page.publication) + page.publication.length);
+	var d = new RegExp('^\\s*(' + MONTHS + ')\\.?,?\\s+(?:\\d{1,2},?\\s+)?(\\d{4})', 'i').exec(after) || /Copyright \(c\) (\d{4})/i.exec(page.body);
+	if (d) { out.year = d[d.length - 1]; out.date = d.length > 2 ? d[1] + ' ' + d[2] : d[1]; }
+	return out;
+}
+
 function classifyWestlaw(page) {
 	var st = statuteFromHeader(page);
-	return st ? { parsed: st, extra: { title: st.rest } } : classify(page);
+	if (st) return { parsed: st, extra: { title: st.rest } };
+	var art = articleFromHeader(page);
+	return art ? { parsed: art, extra: {} } : classify(page);
 }
 
 function detectWeb(doc, url) {

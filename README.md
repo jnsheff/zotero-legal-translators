@@ -26,8 +26,10 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
 * **Lexis+** reads `h1#SS_DocumentTitle` and the reporter/info elements; statutes take the code and section from
   the title and the section name from the heading in the text. The results page is read from `a.titleLink`; items
   that are not cases, statutes or articles (news, agency decisions) are skipped.
-* **Not yet checked:** a Lexis case page and a Westlaw law-review page (no saved sample), so those rely on the
-  generic citation parser.
+* **Westlaw law-review articles** are read from the header (`#title`, `#author`, `#pubname`, `#cite`) and the first
+  line of the text, which gives the Bluebook journal abbreviation and the month and year.
+* **Not yet checked:** a Lexis case page (the sample saved so far was an unrendered page shell), so Lexis cases rely
+  on the generic citation parser.
 * Courts are converted to Bluebook abbreviations where recognised (`5th Cir.`, `E.D. Tex.`, `S.D.N.Y.`, `U.S.`);
   state codes become e.g. `N.Y. Civ. Rights Law`. Others are kept as the site prints them.
 
