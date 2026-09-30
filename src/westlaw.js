@@ -7,7 +7,7 @@ var TITLE_SEL = ['#title', '#co_docHeaderTitleLine', '.co_title', 'h1'];
 var RESULT_LINK = 'a.draggable_document_link, a[id^="cobalt_result_"][id$="_title"], a[id^="cobalt_result_"][id*="_title"]';
 
 function isDocumentURL(url) {
-	return /\/Document\/I[0-9a-f]+/i.test(url);
+	return /\/Document\/[A-Z][0-9a-f]{6,}/i.test(url) // I... cases and articles, N... statutes and rules;
 }
 function isListURL(url) {
 	return /\/(?:Search\/(?:Results|ResultList|Home)|Browse\/|Folders?\/|History)/i.test(url) || /[?&]listSource=Search/i.test(url);
@@ -83,7 +83,7 @@ function getSearchResults(doc, checkOnly) {
 	var links = doc.querySelectorAll(RESULT_LINK);
 	for (var i = 0; i < links.length; i++) {
 		var a = links[i], title = spacedText(a);
-		if (!title || !a.href || !/\/Document\/I/.test(a.href)) continue;
+		if (!title || !a.href || !/\/Document\/[A-Z][0-9a-f]{6,}/i.test(a.href)) continue;
 		// result types other than cases and codes (briefs, practice materials, analytical) are not read yet
 		var kind = a.getAttribute('subcontenttype');
 		if (kind && !/case|statute|code|regulation|rule/i.test(kind)) continue;

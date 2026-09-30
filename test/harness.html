@@ -20,20 +20,20 @@ const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) errors.pu
 const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
 (async () => {
   // header sanity: the target regex matches what it should
-  for (const [p, yes, no] of [[WL, 'https://1.next.westlaw.com/Document/I1/View/FullText.html', 'https://example.com/westlaw.com'], [LX, 'https://plus.lexis.com/api/document?x=1', 'https://www.lexisnexis.com/']]) {
+  for (const [p, yes, no] of [[WL, 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html', 'https://example.com/westlaw.com'], [LX, 'https://plus.lexis.com/api/document?x=1', 'https://www.lexisnexis.com/']]) {
     const h = JSON.parse((await (await fetch('../' + p, { cache: 'no-store' })).text()).split('\n}\n')[0] + '\n}');
     if (!new RegExp(h.target).test(yes)) errors.push(p + ': target misses ' + yes);
     if (new RegExp(h.target).test(no)) errors.push(p + ': target matches ' + no);
   }
   let w = await load(WL);
-  const D = 'https://1.next.westlaw.com/Document/I1/View/FullText.html?transitionType=x&contextData=(sc.Search)';
+  const D = 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html?transitionType=x&contextData=(sc.Search)';
   eq(w.T.detectWeb(await w.doc('westlaw-case.html'), D), 'case', 'WL case detect');
   await w.T.doWeb(await w.doc('westlaw-case.html'), D);
   eq(pick(w.items[0], ['itemType', 'caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'libraryCatalog']),
-    { itemType: 'case', caseName: 'Feist Publications, Inc. v. Rural Telephone Service Co., Inc.', reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: 'https://1.next.westlaw.com/Document/I1/View/FullText.html', libraryCatalog: 'Westlaw' }, 'WL case item');
+    { itemType: 'case', caseName: 'Feist Publications, Inc. v. Rural Telephone Service Co., Inc.', reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html', libraryCatalog: 'Westlaw' }, 'WL case item');
   await w.T.doWeb(await w.doc('westlaw-case-notitle.html'), D);
   eq(pick(w.items[1], ['reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber']), { reporter: 'WL', reporterVolume: '2025', firstPage: '458520', court: 'D. Del.', dateDecided: 'February 11, 2025', docketNumber: 'Civil Action No. 1:20-cv-613-SB' }, 'WL unpublished, header only');
-  eq(w.T.detectWeb(await w.doc('westlaw-statute.html'), D), 'statute', 'WL statute'); await w.T.doWeb(await w.doc('westlaw-statute.html'), D);
+  eq(w.T.detectWeb(await w.doc('westlaw-statute.html'), 'https://1.next.westlaw.com/Document/N2A5B4C6D7E8F9A0B1C2D3E4F5A6B7C8D/View/FullText.html?x=1'), 'statute', 'WL statute (N... document id)'); await w.T.doWeb(await w.doc('westlaw-statute.html'), D);
   eq(pick(w.items[2], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'U.S.C.', codeNumber: '47', section: '230', nameOfAct: 'Protection for private blocking and screening of offensive material' }, 'WL federal statute item');
   await w.T.doWeb(await w.doc('westlaw-statute-state.html'), D);
   eq(pick(w.items[3], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'N.Y. Civ. Rights Law', codeNumber: '', section: '50-f', nameOfAct: 'Right of publicity' }, 'WL state statute item');
@@ -68,8 +68,8 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     eq(pick(RW.items[0], ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url']),
       { caseName: 'Fletcher v. Experian Information Solutions, Incorporated', reporter: 'F.4th', reporterVolume: '168', firstPage: '231', court: '5th Cir.', dateDecided: 'February 18, 2026', docketNumber: 'No. 25-20086', url: 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html' }, 'real case item');
     const rs = await rp('statute');
-    eq(RW.T.detectWeb(rs, 'https://1.next.westlaw.com/Document/I1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e/View/FullText.html'), 'statute', 'real statute detect');
-    await RW.T.doWeb(rs, 'https://1.next.westlaw.com/Document/I1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e/View/FullText.html');
+    eq(RW.T.detectWeb(rs, 'https://1.next.westlaw.com/Document/N3CE4D4E2D75F11F0AB4D95D7E6BE7963/View/FullText.html'), 'statute', 'real statute detect');
+    await RW.T.doWeb(rs, 'https://1.next.westlaw.com/Document/N3CE4D4E2D75F11F0AB4D95D7E6BE7963/View/FullText.html');
     eq(pick(RW.items[1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'N.Y. Civ. Rights Law', codeNumber: '', section: '50-f', nameOfAct: 'Right of publicity' }, 'real statute item');
     const ra = await rp('article'), au = 'https://1.next.westlaw.com/Document/If9416b51b20911e28578f7ccc38dcbee/View/FullText.html';
     if (ra) {
