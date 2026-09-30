@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 01:58:08"
+	"lastUpdated": "2026-09-30 02:01:55"
 }
 
 /*
@@ -215,7 +215,7 @@ function buildItem(parsed, extra) {
 		item.title = parsed.title;
 		item.bookTitle = parsed.bookTitle;
 		item.volume = parsed.volume;
-		item.pages = parsed.section; // Zotero has no section field for book sections; the section number goes here
+		item.extra = 'Section: ' + parsed.section; // Zotero has no section field for book sections
 		if (parsed.edition) item.edition = parsed.edition;
 		if (parsed.date) item.date = parsed.date;
 		(parsed.author || '').split(/\s*;\s*|\s+(?:&|and)\s+/).forEach(function (a) {

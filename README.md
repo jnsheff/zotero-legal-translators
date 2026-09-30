@@ -35,7 +35,7 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
   state codes become e.g. `N.Y. Civ. Rights Law`. Others are kept as the site prints them.
 
 * **Treatises** (Westlaw and Lexis+) become Book Sections: Title = section title, Book Title = the treatise,
-  Volume, and the section number in Pages (Zotero has no section field for book sections); Westlaw also gives
+  Volume, and the section number in Extra as `Section: 18:2` (Zotero has no section field for book sections); Westlaw also gives
   Edition, Date (the update month) and the treatise author as Book Author.
 * **Journal-article authors** on Lexis are read from the "Author:" line, including joint authors; Lexis category
   prefixes ("ARTICLE:", "RESPONSE:") are dropped from titles.

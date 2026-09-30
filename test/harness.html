@@ -58,7 +58,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(pick(ni, ['code', 'section', 'nameOfAct']), { code: 'N.Y. Civ. Rights Law', section: '50-f', nameOfAct: 'Right of publicity' }, 'WL state statute from code set and title');
   eq(w.T.detectWeb(await w.doc('westlaw-treatise.html'), D), 'bookSection', 'WL treatise'); await w.T.doWeb(await w.doc('westlaw-treatise.html'), D);
   { const t = w.items[w.items.length - 1];
-    eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'pages', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', pages: '18:2', edition: '5', date: 'September 2026' }, 'WL treatise item');
+    eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'extra', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', extra: 'Section: 18:2', edition: '5', date: 'September 2026' }, 'WL treatise item');
     eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:J. Thomas|McCarthy'], 'WL treatise author'); }
   eq(w.T.detectWeb(await w.doc('other.html'), D), false, 'WL other document page');
   eq(w.T.detectWeb(await w.doc('other.html'), 'https://1.next.westlaw.com/Home.html'), false, 'WL home');
@@ -85,7 +85,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     eq(pick(a, ['title', 'publicationTitle', 'volume', 'pages', 'date']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harv. L. Rev.', volume: '113', pages: '501', date: 'April 2000' }, 'LX article item');
     eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Lawrence|Lessig'], 'LX article author'); }
   eq(x.T.detectWeb(await x.doc('lexis-treatise.html'), LU), 'bookSection', 'LX treatise'); await x.T.doWeb(await x.doc('lexis-treatise.html'), LU);
-  eq(pick(x.items[x.items.length - 1], ['itemType', 'title', 'bookTitle', 'volume', 'pages']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', pages: '1207' }, 'LX treatise item');
+  eq(pick(x.items[x.items.length - 1], ['itemType', 'title', 'bookTitle', 'volume', 'extra']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', extra: 'Section: 1207' }, 'LX treatise item');
   await x.T.doWeb(await x.doc('lexis-joint.html'), LU);
   eq(x.items[x.items.length - 1].creators.map(c => c.firstName + '|' + c.lastName), ['Jeanne C.|Fromer', 'Mark P.|McKenna'], 'LX joint authors');
   x.items.splice(2, 5); // keep the count below
@@ -111,7 +111,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     if (rwt.ok) {
       const rd = new DOMParser().parseFromString(await rwt.text(), 'text/html'), tu = 'https://1.next.westlaw.com/Document/I37d38a6220fc11dc831aeff3279daa61/View/FullText.html';
       eq(RW.T.detectWeb(rd, tu), 'bookSection', 'real Westlaw treatise detect'); await RW.T.doWeb(rd, tu); const t = RW.items.pop();
-      eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'pages', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule\u2014Trademark cannot be assigned apart from the good will it symbolizes', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', pages: '18:2', edition: '5', date: 'September 2026' }, 'real Westlaw treatise item');
+      eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'extra', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule\u2014Trademark cannot be assigned apart from the good will it symbolizes', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', extra: 'Section: 18:2', edition: '5', date: 'September 2026' }, 'real Westlaw treatise item');
       eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:J. Thomas|McCarthy'], 'real Westlaw treatise author');
     }
     const ra = await rp('article'), au = 'https://1.next.westlaw.com/Document/If9416b51b20911e28578f7ccc38dcbee/View/FullText.html';
@@ -168,7 +168,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     if (rlt.ok) {
       const rd = new DOMParser().parseFromString(await rlt.text(), 'text/html');
       eq(RX.T.detectWeb(rd, u), 'bookSection', 'real Lexis treatise detect'); await RX.T.doWeb(rd, u); const t = RX.items.pop();
-      eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'pages']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', pages: '1207' }, 'real Lexis treatise item');
+      eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'extra']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', extra: 'Section: 1207' }, 'real Lexis treatise item');
     }
     const rlj = await fetch('../test pages/lexis-joint-authors.html', { cache: 'no-store' });
     if (rlj.ok) {
