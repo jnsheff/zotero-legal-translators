@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 01:11:42"
+	"lastUpdated": "2026-09-30 01:12:53"
 }
 
 /*
@@ -357,7 +357,7 @@ function statuteFromHeader(page) {
 		else return null;
 	}
 	else return null;
-	if (t) out.rest = t[2];
+	if (t) out.rest = t[2].replace(/\s*\[[^\]]*\]\s*$/, ''); // "[Statutory Text & Notes of Decisions subdivisions I to III]"
 	return out;
 }
 

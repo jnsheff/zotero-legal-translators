@@ -52,7 +52,7 @@ function statuteFromHeader(page) {
 		else return null;
 	}
 	else return null;
-	if (t) out.rest = t[2];
+	if (t) out.rest = t[2].replace(/\s*\[[^\]]*\]\s*$/, ''); // "[Statutory Text & Notes of Decisions subdivisions I to III]"
 	return out;
 }
 

@@ -40,6 +40,10 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(w.T.detectWeb(await w.doc('westlaw-article.html'), D), 'journalArticle', 'WL article'); await w.T.doWeb(await w.doc('westlaw-article.html'), D);
   eq(pick(w.items[4], ['title', 'publicationTitle', 'journalAbbreviation', 'volume', 'pages', 'date']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harvard Law Review', journalAbbreviation: 'Harv. L. Rev.', volume: '113', pages: '501', date: 'April 2000' }, 'WL article item');
   eq(w.items[4].creators.map(c => c.firstName + '|' + c.lastName), ['Lawrence|Lessig'], 'WL article author');
+  const RU = 'https://1.next.westlaw.com/Document/N2DC564D01A1611E29721A053D49F2B3B/View/FullText.html?navigationPath=Search%2Fv1&listSource=Search&list=MULTIPLECITATIONS&originationContext=NonUniqueFindSelected&transitionType=UniqueDocItem&contextData=%28sc.Search%29';
+  eq(w.T.detectWeb(await w.doc('westlaw-statute-usca.html'), RU), 'statute', 'WL 15 USCA § 1125 (address from a real page)');
+  await w.T.doWeb(await w.doc('westlaw-statute-usca.html'), RU);
+  eq(pick(w.items[w.items.length - 1], ['code', 'codeNumber', 'section', 'nameOfAct', 'url']), { code: 'U.S.C.', codeNumber: '15', section: '1125', nameOfAct: 'False designations of origin, false descriptions, and dilution forbidden', url: 'https://1.next.westlaw.com/Document/N2DC564D01A1611E29721A053D49F2B3B/View/FullText.html' }, 'WL 15 USCA item');
   // statute with no usable citation line, and reached through a URL that is not /Document/
   const NU = 'https://1.next.westlaw.com/Some/Other/Path.html';
   const nc = (await w.doc('westlaw-statute.html')); nc.querySelector('#cite').remove(); nc.querySelector('#titleDesc').textContent = 'Title 47. Telecommunications';
