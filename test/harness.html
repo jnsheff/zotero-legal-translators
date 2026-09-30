@@ -74,6 +74,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   for (const n of ['lexis-regulation.html', 'lexis-regulation2.html']) {
     eq(x.T.detectWeb(await x.doc(n), LU), 'statute', n + ' is a statute, not a case'); await x.T.doWeb(await x.doc(n), LU);
     eq(pick(x.items[x.items.length - 1], ['itemType', 'code', 'codeNumber', 'section']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108' }, n + ' item');
+    if (n === 'lexis-regulation.html') eq(x.items[x.items.length - 1].nameOfAct, 'Institution of inter partes review', 'regulation name from the heading');
   }
   x.items.splice(2, 2); // keep the count below
   eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
@@ -128,6 +129,13 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     if (lusc) {
       eq(RX.T.detectWeb(lusc, u), 'statute', 'real Lexis USC detect'); await RX.T.doWeb(lusc, u);
       eq(pick(RX.items[2], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '15', section: '1127' }, 'real Lexis USC item');
+    }
+    const rgr = await fetch('../test pages/lexis-regulation.raw.html', { cache: 'no-store' });
+    if (rgr.ok) {
+      const rd = new DOMParser().parseFromString(await rgr.text(), 'text/html');
+      eq(RX.T.detectWeb(rd, u), 'statute', 'real Lexis regulation detect'); await RX.T.doWeb(rd, u);
+      eq(pick(RX.items[RX.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review' }, 'real Lexis regulation item');
+      RX.items.pop();
     }
     const ll = await rlp('list'); eq(RX.T.detectWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'), 'multiple', 'real Lexis results detect');
     await RX.T.doWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'); real += '; Lexis statute, results (' + RX.picks[0] + ' results)';

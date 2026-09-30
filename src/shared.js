@@ -289,7 +289,9 @@ function classify(page) {
 function statuteResult(st, page, date) {
 	if (!st.rest && page.body) {
 		// the section heading in the text: "47-25-1102. Part definitions."
-		var nm = new RegExp(st.section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.\\s+([A-Z][^.]{2,120}?)\\.\\s').exec(page.body);
+		var sec = st.section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		// "47-25-1102. Part definitions." or "\u00a7 42.108 Institution of inter partes review. (a)"
+		var nm = new RegExp('(?:\\u00a7+\\s*' + sec + '\\.?|' + sec + '\\.)\\s+([A-Z][^.]{2,120}?)\\.\\s').exec(page.body);
 		if (nm) st.rest = nm[1];
 	}
 	return { parsed: st, extra: { date: date, title: st.rest } };
