@@ -39,8 +39,7 @@ function statuteFromHeader(page) {
 	if (!/\u00a7/.test(cite)) return null;
 	var m = /^(\d+)\s+(U\.?S\.?C\.?(?:A|S)?\.?|C\.?F\.?R\.?)\s+\u00a7+\s*(\S+)/i.exec(cite), out;
 	if (m) {
-		var fed = /^C/i.test(m[2]) ? 'C.F.R.' : /A\.?$/i.test(m[2]) ? 'U.S.C.A.' : 'U.S.C.';
-		out = { kind: 'statute', codeNumber: m[1], code: fed, section: m[3].replace(/[.,]$/, '') };
+		out = { kind: 'statute', codeNumber: m[1], code: normCode(m[2]), section: m[3].replace(/[.,]$/, '') };
 	}
 	else if ((m = /^([A-Z]{2})\s+.+?\s+\u00a7+\s*(\S+)$/.exec(cite)) && STATE_CODES[m[1]]) {
 		out = { kind: 'statute', codeNumber: '', code: page.titleDesc ? stateCodeName(STATE_CODES[m[1]], page.titleDesc) : cite.replace(/\s*\u00a7.*$/, ''), section: m[2] };

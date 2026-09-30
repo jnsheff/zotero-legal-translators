@@ -3,7 +3,7 @@ var errors = [];
 var Zotero = { Item: function (t) { this.itemType = t; this.creators = []; } };
 var ZU = { capitalizeTitle: function (s) { return s.replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); },
 	cleanAuthor: function (a) { var p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: 'author' }; } };
-eval(read('src/shared.js') + '; this.S = { abbrevCourt: abbrevCourt, stateCodeName: stateCodeName, parseBareCite: parseBareCite, parseCitation: parseCitation, parseStatute: parseStatute, buildItem: buildItem, cleanTitle: cleanTitle, findDocket: findDocket, findDate: findDate, classify: classify };');
+eval(read('src/shared.js') + '; this.S = { normCode: normCode, abbrevCourt: abbrevCourt, stateCodeName: stateCodeName, parseBareCite: parseBareCite, parseCitation: parseCitation, parseStatute: parseStatute, buildItem: buildItem, cleanTitle: cleanTitle, findDocket: findDocket, findDate: findDate, classify: classify };');
 function eq(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) errors.push(m + ': got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b)); }
 function pick(o, ks) { var r = {}; ks.forEach(function (k) { r[k] = o[k]; }); return r; }
 
@@ -27,7 +27,7 @@ eq(S.parseCitation('Just some text'), null, 'not a citation');
 eq(S.parseCitation('Feist v. Rural, 499 U.S. 340'), null, 'no parenthetical: not enough to be sure');
 
 var s = S.parseStatute('47 U.S.C.A. § 230 Protection for private blocking and screening of offensive material');
-eq(pick(s, ['codeNumber', 'code', 'section', 'rest']), { codeNumber: '47', code: 'U.S.C.A.', section: '230', rest: 'Protection for private blocking and screening of offensive material' }, 'USC');
+eq(pick(s, ['codeNumber', 'code', 'section', 'rest']), { codeNumber: '47', code: 'U.S.C.', section: '230', rest: 'Protection for private blocking and screening of offensive material' }, 'USC');
 eq(pick(S.parseStatute('Cal. Civ. Code § 1798.100'), ['codeNumber', 'code', 'section']), { codeNumber: '', code: 'Cal. Civ. Code', section: '1798.100' }, 'state code');
 eq(pick(S.parseStatute('17 C.F.R. § 240.10b-5'), ['code', 'section']), { code: 'C.F.R.', section: '240.10b-5' }, 'CFR');
 eq(pick(S.parseStatute('Tex. Bus. & Com. Code Ann. § 26.01(b)'), ['code', 'section']), { code: 'Tex. Bus. & Com. Code Ann.', section: '26.01(b)' }, 'Tex.');
@@ -44,7 +44,7 @@ eq(pick(it, ['itemType', 'caseName', 'reporter', 'reporterVolume', 'firstPage', 
 it = S.buildItem(S.parseCitation('Authors Guild v. Google, Inc., 804 F.3d 202 (2d Cir. 2015)'), { date: 'Oct. 16, 2015' });
 eq(pick(it, ['court', 'dateDecided']), { court: '2d Cir.', dateDecided: 'Oct. 16, 2015' }, 'the citation\'s court wins; the page\'s full date replaces a bare year');
 it = S.buildItem(S.parseStatute('47 U.S.C.A. § 230 Protection for blocking'), {});
-eq(pick(it, ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'U.S.C.A.', codeNumber: '47', section: '230', nameOfAct: 'Protection for blocking' }, 'statute item');
+eq(pick(it, ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'U.S.C.', codeNumber: '47', section: '230', nameOfAct: 'Protection for blocking' }, 'statute item');
 it = S.buildItem(S.parseCitation('Lawrence Lessig, Code and Other Laws, 113 Harv. L. Rev. 501 (2000)'), {});
 eq([it.itemType, it.creators.length, it.publicationTitle, it.pages, it.date], ['journalArticle', 1, 'Harv. L. Rev.', '501', '2000'], 'article item');
 // court names
@@ -61,4 +61,5 @@ eq(S.parseBareCite('168 F.4th 231'), { volume: '168', reporter: 'F.4th', page: '
 eq(S.parseBareCite('124 Fed.R.Serv.3d 171'), { volume: '124', reporter: 'Fed.R.Serv.3d', page: '171' }, 'bare rules cite'); eq(S.parseBareCite('Approx. 16 pages'), null, 'not a cite');
 eq(S.findDocket('Robert FLETCHER, Plaintiff—Appellant, v. EXPERIAN \u2062\u2063 No. 25-20086 FILED February 18, 2026'), 'No. 25-20086', 'docket before FILED');
 eq(S.findDocket('Civil Action No. 1:20-cv-613-SB Judge Bibas'), 'Civil Action No. 1:20-cv-613-SB', 'civil action docket'); eq(S.findDocket('no. of pages'), '', 'no docket');
+eq(['USCA', 'USCS', 'U.S.C.S.', 'U.S.C.', 'CFR', 'Tenn. Code Ann.'].map(S.normCode), ['U.S.C.', 'U.S.C.', 'U.S.C.', 'U.S.C.', 'C.F.R.', 'Tenn. Code Ann.'], 'code names');
 print(errors.length ? 'PARSE FAILED\n' + errors.join('\n') : 'parse OK');

@@ -74,13 +74,21 @@ function parseCitation(text) {
 	return null;
 }
 
+// U.S. Code as the sites print it (USC, USCA, USCS, U.S.C.A., U.S.C.S.) -> "U.S.C."; CFR -> "C.F.R."
+function normCode(code) {
+	code = squash(code);
+	if (/^U\.?S\.?C\.?[AS]?\.?$/i.test(code)) return 'U.S.C.';
+	if (/^C\.?F\.?R\.?$/i.test(code)) return 'C.F.R.';
+	return code;
+}
+
 // Statutes and regulations
 //   47 U.S.C.A. \u00a7 230(c)   /   Cal. Civ. Code \u00a7 1798.100   /   17 C.F.R. \u00a7 240.10b-5
 function parseStatute(text) {
 	text = squash(text);
 	var m = /^(\d{1,3})\s+([A-Z][A-Za-z.&'\u2019 ]*?[A-Za-z.])\s+(?:\u00a7+|Sec(?:tions?|s?)\.?)\s*([\w.()\-\u2013,]+)/.exec(text);
 	var out;
-	if (m) out = { kind: 'statute', codeNumber: m[1], code: squash(m[2]), section: m[3].replace(/[,.]$/, '') };
+	if (m) out = { kind: 'statute', codeNumber: m[1], code: normCode(m[2]), section: m[3].replace(/[,.]$/, '') };
 	else if ((m = /^([A-Z][A-Za-z.&'\u2019 ]*?[A-Za-z.])\s+(?:\u00a7+|Sec(?:tions?|s?)\.?)\s*([\w.()\-\u2013,]+)/.exec(text))) {
 		out = { kind: 'statute', codeNumber: '', code: squash(m[1]), section: m[2].replace(/[,.]$/, '') };
 	}

@@ -34,7 +34,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   await w.T.doWeb(await w.doc('westlaw-case-notitle.html'), D);
   eq(pick(w.items[1], ['reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber']), { reporter: 'WL', reporterVolume: '2025', firstPage: '458520', court: 'D. Del.', dateDecided: 'February 11, 2025', docketNumber: 'Civil Action No. 1:20-cv-613-SB' }, 'WL unpublished, header only');
   eq(w.T.detectWeb(await w.doc('westlaw-statute.html'), D), 'statute', 'WL statute'); await w.T.doWeb(await w.doc('westlaw-statute.html'), D);
-  eq(pick(w.items[2], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'U.S.C.A.', codeNumber: '47', section: '230', nameOfAct: 'Protection for private blocking and screening of offensive material' }, 'WL federal statute item');
+  eq(pick(w.items[2], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'U.S.C.', codeNumber: '47', section: '230', nameOfAct: 'Protection for private blocking and screening of offensive material' }, 'WL federal statute item');
   await w.T.doWeb(await w.doc('westlaw-statute-state.html'), D);
   eq(pick(w.items[3], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'N.Y. Civ. Rights Law', codeNumber: '', section: '50-f', nameOfAct: 'Right of publicity' }, 'WL state statute item');
   eq(w.T.detectWeb(await w.doc('westlaw-article.html'), D), 'journalArticle', 'WL article'); await w.T.doWeb(await w.doc('westlaw-article.html'), D);
@@ -52,7 +52,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(pick(x.items[0], ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'libraryCatalog']),
     { caseName: "Feist Publ'ns, Inc. v. Rural Tel. Serv. Co.", reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: undefined, libraryCatalog: 'Lexis+' }, 'LX case item');
   eq(x.T.detectWeb(await x.doc('lexis-statute.html'), LU), 'statute', 'LX statute'); await x.T.doWeb(await x.doc('lexis-statute.html'), LU);
-  eq(pick(x.items[1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.S.', codeNumber: '47', section: '230' }, 'LX statute item');
+  eq(pick(x.items[1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '47', section: '230' }, 'LX statute item');
   eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
   await x.T.doWeb(await x.doc('lexis-results.html'), LU);
   eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
@@ -84,13 +84,22 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     real = 'real pages: case, statute, list (' + n + ' results)';
   }
   // Real saved Lexis+ pages
-  const RL = { statute: 'TENNESSEE CODE UNANNOTATED CUI_ PAW Document Page', list: '48 results for AI hallucinations' };
-  const rlp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RL[k] + '.html'), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };
+  const RL = { case: 'lexis-case.raw', usc: 'lexis-statute-1127.raw', statute: 'TENNESSEE CODE UNANNOTATED CUI_ PAW Document Page', list: '48 results for AI hallucinations' };
+  const rlp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RL[k] + (/raw/.test(RL[k]) ? '.html' : '.html')), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };
   const ls = await rlp('statute');
   if (ls) {
     const RX = await load(LX), u = 'https://plus.lexis.com/document/?pdmfid=1&crid=x';
     eq(RX.T.detectWeb(ls, u), 'statute', 'real Lexis statute detect'); await RX.T.doWeb(ls, u);
     eq(pick(RX.items[0], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct', 'libraryCatalog']), { itemType: 'statute', code: 'Tenn. Code Ann.', codeNumber: '', section: '47-25-1102', nameOfAct: 'Part definitions', libraryCatalog: 'Lexis+' }, 'real Lexis statute item');
+    const lc = await rlp('case'), lusc = await rlp('usc');
+    if (lc) {
+      eq(RX.T.detectWeb(lc, u), 'case', 'real Lexis case detect'); await RX.T.doWeb(lc, u);
+      eq(pick(RX.items[1], ['itemType', 'caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url']), { itemType: 'case', caseName: 'Fletcher v. Experian Info. Sols., Inc.', reporter: 'F.4th', reporterVolume: '168', firstPage: '231', court: '5th Cir.', dateDecided: 'February 18, 2026', docketNumber: 'No. 25-20086', url: undefined }, 'real Lexis case item');
+    }
+    if (lusc) {
+      eq(RX.T.detectWeb(lusc, u), 'statute', 'real Lexis USC detect'); await RX.T.doWeb(lusc, u);
+      eq(pick(RX.items[2], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '15', section: '1127' }, 'real Lexis USC item');
+    }
     const ll = await rlp('list'); eq(RX.T.detectWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'), 'multiple', 'real Lexis results detect');
     await RX.T.doWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'); real += '; Lexis statute, results (' + RX.picks[0] + ' results)';
     if (RX.picks[0] !== 10) errors.push('real Lexis results: only ' + RX.picks[0]);

@@ -28,8 +28,9 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
   that are not cases, statutes or articles (news, agency decisions) are skipped.
 * **Westlaw law-review articles** are read from the header (`#title`, `#author`, `#pubname`, `#cite`) and the first
   line of the text, which gives the Bluebook journal abbreviation and the month and year.
-* **Not yet checked:** a Lexis case page (the sample saved so far was an unrendered page shell), so Lexis cases rely
-  on the generic citation parser.
+* **Lexis cases** are read from `h1#SS_DocumentTitle`, `span.active-reporter`, `span.date` and the `p.SS_DocumentInfo`
+  lines (full court name, date, docket), checked against a saved page. Federal code cites (USC, USCA, USCS) are
+  normalised to `U.S.C.`, as the Bluebook wants.
 * Courts are converted to Bluebook abbreviations where recognised (`5th Cir.`, `E.D. Tex.`, `S.D.N.Y.`, `U.S.`);
   state codes become e.g. `N.Y. Civ. Rights Law`. Others are kept as the site prints them.
 
