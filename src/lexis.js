@@ -19,7 +19,9 @@ function readPage(doc) {
 	var infos = doc.querySelectorAll(INFO_SEL), info = [];
 	for (var i = 0; i < infos.length; i++) info.push(spacedText(infos[i]));
 	var court = info[0] || '', title = cleanTitle(firstText(doc, TITLE_SEL));
-	var date = cleanDate(firstText(doc, DATE_SEL)) || findDate(info.join(' ')) || (info.filter(function (i) { return /^(?:\w+\.?,? )?\d{4}$|^[A-Z][a-z]+\.?,? \d{4}$/.test(i); })[0] || ''); // articles: "October, 2012"
+	var date = cleanDate(firstText(doc, DATE_SEL)) || findDate(info.join(' ')) || (info.filter(function (i) {
+		return /^(?:\w+\.?,? )?\d{4}$|^[A-Z][a-z]+\.?,? \d{4}$/.test(i);
+	})[0] || ''); // articles: "October, 2012"
 	return {
 		pageTitle: cleanTitle(doc.title),
 		title: title,
@@ -37,9 +39,11 @@ function readPage(doc) {
 function detectWeb(doc, url) {
 	watchForChanges(doc);
 	try {
-		var type = detect(doc, url);
+		var type = detect(doc);
 		Zotero.debug('Lexis (legal): detectWeb -> ' + type + ' for ' + url.replace(/[?#].*$/, ''));
-		if (!type) Zotero.debug('Lexis (legal): page read as ' + JSON.stringify(readPage(doc), function (k, v) { return k === 'body' ? undefined : v; }));
+		if (!type) Zotero.debug('Lexis (legal): page read as ' + JSON.stringify(readPage(doc), function (k, v) {
+			return k === 'body' ? undefined : v;
+		}));
 		return type;
 	}
 	catch (e) {
@@ -64,7 +68,7 @@ function watchForChanges(doc) {
 // Treatise section: h1 "8 Gilson on Trademarks 1207", breadcrumb trail starting with the book title,
 // banner (h2.SS_Banner) "1207 Refusal on Basis of ..."
 function treatiseFromPage(page) {
-	var m = /^(\d{1,3})\s+(.+?)\s+(\d[\w.:\-]*)$/.exec(page.title), b = /^(\S+)\s+(.+)$/.exec(page.banner || '');
+	var m = /^(\d{1,3})\s+(.+?)\s+(\d[\w.:-]*)$/.exec(page.title), b = /^(\S+)\s+(.+)$/.exec(page.banner || '');
 	if (!m || !b || b[1] !== m[3] || /\u00a7/.test(page.title)) return null;
 	return { kind: 'treatise', title: b[2], bookTitle: page.crumb || m[2], volume: m[1], section: m[3], edition: '', date: '', author: '' };
 }
@@ -74,7 +78,7 @@ function classifyLexis(page) {
 	return tr ? { parsed: tr, extra: {} } : classify(page);
 }
 
-function detect(doc, url) {
+function detect(doc) {
 	if (doc.title && /\bresults\b/i.test(doc.title) && getSearchResults(doc, true)) return 'multiple';
 	var c = classifyLexis(readPage(doc));
 	return c ? TYPE_OF[c.parsed.kind] : false;
@@ -99,7 +103,7 @@ async function doWeb(doc, url) {
 		if (!items) return;
 		for (let u of Object.keys(items)) {
 			try {
-				await scrape(await requestDocument(u), u);
+				await scrape(await requestDocument(u));
 			}
 			catch (e) {
 				Zotero.debug('Lexis: skipped ' + u + ': ' + e.message); // news, agency decisions, etc.
@@ -107,11 +111,11 @@ async function doWeb(doc, url) {
 		}
 	}
 	else {
-		await scrape(doc, url);
+		await scrape(doc);
 	}
 }
 
-async function scrape(doc, url) {
+async function scrape(doc) {
 	var c = classifyLexis(readPage(doc));
 	if (!c) throw new Error('Lexis: could not read a citation from this page');
 	var item = buildItem(c.parsed, c.extra);

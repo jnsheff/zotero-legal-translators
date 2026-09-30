@@ -5,14 +5,18 @@
 // Supreme Court Bulletin) is not handled.
 
 var RULE_SETS = { frcp: 'Fed. R. Civ. P.', fre: 'Fed. R. Evid.', frap: 'Fed. R. App. P.', frcrmp: 'Fed. R. Crim. P.', frbp: 'Fed. R. Bankr. P.', supct: 'Sup. Ct. R.' };
-var ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth',
-	'fourteenth', 'fifteenth', 'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth', 'twentieth', 'twenty-first', 'twenty-second', 'twenty-third',
-	'twenty-fourth', 'twenty-fifth', 'twenty-sixth', 'twenty-seventh'];
+var ORDINAL_WORDS = ('first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth '
+	+ 'fifteenth sixteenth seventeenth eighteenth nineteenth twentieth twenty-first twenty-second twenty-third '
+	+ 'twenty-fourth twenty-fifth twenty-sixth twenty-seventh').split(' ');
 
 function toRoman(n) {
 	var map = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']], out = '';
 	if (n >= 20) return 'XX' + toRoman(n - 20);
-	map.forEach(function (p) { while (n >= p[0]) { out += p[1]; n -= p[0]; } });
+	map.forEach(function (p) {
+		while (n >= p[0]) {
+			out += p[1]; n -= p[0];
+		}
+	});
 	return out;
 }
 
@@ -26,7 +30,11 @@ function nameCase(s) {
 		if (m) return m[1] + m[2].charAt(0) + m[2].slice(1).toLowerCase() + m[3];
 		if (w.length > 1 && w === w.toUpperCase() && /[A-Z]/.test(w) && !/^(?:[A-Z]\.)+$/.test(w) && !/^(?:U\.S\.|N\.A\.|L\.L\.C\.|LLC|LLP|II|III|IV|USA|NLRB|EEOC|FCC|FTC|SEC|IRS|EPA)$/i.test(w)) {
 			var lower = w.toLowerCase();
-			return i > 0 && SMALL_WORDS.test(lower) ? lower : lower.replace(/(^|[-'’(])([a-z])/g, function (x, p, c) { return p + c.toUpperCase(); });
+			return i > 0 && SMALL_WORDS.test(lower)
+				? lower
+				: lower.replace(/(^|[-'’(])([a-z])/g, function (x, p, c) {
+					return p + c.toUpperCase();
+				});
 		}
 		return w;
 	}).join('');
@@ -37,8 +45,10 @@ function party(s) {
 	s = squash(s).replace(/\s*,?\s*et al\.?/ig, '');
 	var c = s.search(/,(?!\s*(?:Inc|Ltd|LLC|L\.L\.C|Co|Corp|Jr|Sr|II|III|IV|N\.A|P\.C|P\.A|L\.P|S\.A)\b)/i);
 	if (c > 0) s = s.slice(0, c);
-	s = s.replace(/[\s,;]+$/, '').replace(/\.$/, function () { return /(?:Co|Inc|Corp|Ltd|Jr|Sr|N\.A|L\.L\.C|P\.C|L\.P|Bros|Assn|Ass'n)\.$/.test(s.replace(/[\s,;]+$/, '')) ? '.' : ''; });
-	s = s.replace(/^(?:[A-Z][a-z]+\.?\s+){1,2}([A-Z][A-Z'’\-]{2,})$/, '$1'); // "Jane ROE" -> "ROE"
+	s = s.replace(/[\s,;]+$/, '').replace(/\.$/, function () {
+		return /(?:Co|Inc|Corp|Ltd|Jr|Sr|N\.A|L\.L\.C|P\.C|L\.P|Bros|Assn|Ass'n)\.$/.test(s.replace(/[\s,;]+$/, '')) ? '.' : '';
+	});
+	s = s.replace(/^(?:[A-Z][a-z]+\.?\s+){1,2}([A-Z][A-Z'’-]{2,})$/, '$1'); // "Jane ROE" -> "ROE"
 	return nameCase(s);
 }
 
@@ -62,26 +72,26 @@ function identify(doc, url) {
 	var p = path(url), m, title = pageTitle(doc);
 	if (!title) return null;
 
-	if ((m = /^\/uscode\/text\/(\d+)\/([\w.\-]+)$/.exec(p)) && (m = /^(\d+) U\.S\. Code §+\s*(\S+?)(?:\s+-\s+(.+))?$/.exec(title))) {
+	if ((m = /^\/uscode\/text\/(\d+)\/([\w.-]+)$/.exec(p)) && (m = /^(\d+) U\.S\. Code §+\s*(\S+?)(?:\s+-\s+(.+))?$/.exec(title))) {
 		return { kind: 'statute', codeNumber: m[1], code: 'U.S.C.', section: m[2], name: m[3] || '' };
 	}
-	if ((m = /^\/cfr\/text\/(\d+)\/([\w.\-]+)$/.exec(p)) && (m = /^(\d+) CFR §+\s*(\S+?)(?:\s+-\s+(.+))?$/.exec(title))) {
+	if ((m = /^\/cfr\/text\/(\d+)\/([\w.-]+)$/.exec(p)) && (m = /^(\d+) CFR §+\s*(\S+?)(?:\s+-\s+(.+))?$/.exec(title))) {
 		return { kind: 'statute', codeNumber: m[1], code: 'C.F.R.', section: m[2], name: (m[3] || '').replace(/\.$/, '') };
 	}
-	if ((m = /^\/rules\/([a-z]+)\/rule_([\w.\-]+)$/.exec(p)) && RULE_SETS[m[1]]) {
+	if ((m = /^\/rules\/([a-z]+)\/rule_([\w.-]+)$/.exec(p)) && RULE_SETS[m[1]]) {
 		var n = /^Rule\s+(\S+?)\.?\s+(.+)$/.exec(title);
 		return { kind: 'statute', codeNumber: '', code: RULE_SETS[m[1]], section: m[2], name: n ? n[2].replace(/\.$/, '') : '' };
 	}
-	if ((m = /^\/ucc\/(\w+)\/([\w.\-]+)$/.exec(p)) && (m = /^§+\s*(\S+?)\.?\s+(.+)$/.exec(title))) {
+	if ((m = /^\/ucc\/(\w+)\/([\w.-]+)$/.exec(p)) && (m = /^§+\s*(\S+?)\.?\s+(.+)$/.exec(title))) {
 		return { kind: 'statute', codeNumber: '', code: 'U.C.C.', section: m[1], name: m[2].replace(/\.$/, '') };
 	}
-	if ((m = /^\/regulations\/[\w\-]+\/.+$/.exec(p)) && (m = /^(.+?)\s+§+\s*(\S+?)\s+-\s+(.+)$/.exec(title))) {
+	if ((m = /^\/regulations\/[\w-]+\/.+$/.exec(p)) && (m = /^(.+?)\s+§+\s*(\S+?)\s+-\s+(.+)$/.exec(title))) {
 		return { kind: 'statute', codeNumber: '', code: m[1].replace(/\bTit\./, 'tit.'), section: m[2], name: m[3].replace(/\.$/, '') };
 	}
 	if ((m = /^\/constitution\/(articl[e\w]*|amendment[\w]*|[a-z]+_amendment|preamble)$/.exec(p)) && !/^U\.S\. Constitution$/.test(title)) {
 		return constitutionEntry(p, title);
 	}
-	if ((m = /^\/supremecourt\/text\/(?:(\d+)\/(\d+)|([\w\-]+))(?:\/[\w\-]+)?$/.exec(p))) {
+	if ((m = /^\/supremecourt\/text\/(?:(\d+)\/(\d+)|([\w-]+))(?:\/[\w-]+)?$/.exec(p))) {
 		if (/^Cases for /.test(title) && doc.querySelector('ul.citelist a')) return { kind: 'list' };
 		if (/^Cases for /.test(title)) return null;
 		return { kind: 'case', title: title, volume: m[1] || '', page: m[2] || '' };
@@ -94,7 +104,7 @@ function constitutionEntry(p, title) {
 	var m = /^\/constitution\/(articl[e]?([ivx]+)|amendment([ivxl]+))$/i.exec(p), section;
 	if (m && m[2]) section = 'art. ' + m[2].toUpperCase();
 	else if (m && m[3]) section = 'amend. ' + m[3].toUpperCase();
-	else if ((m = /^\/constitution\/([a-z]+)_amendment$/.exec(p)) && ORDINAL_WORDS.indexOf(m[1]) >= 0) section = 'amend. ' + toRoman(ORDINAL_WORDS.indexOf(m[1]) + 1);
+	else if ((m = /^\/constitution\/([a-z]+)_amendment$/.exec(p)) && ORDINAL_WORDS.contains(m[1])) section = 'amend. ' + toRoman(ORDINAL_WORDS.indexOf(m[1]) + 1);
 	else if (p === '/constitution/preamble') section = 'pmbl.';
 	else return null;
 	return { kind: 'statute', codeNumber: '', code: 'U.S. Const.', section: section, name: title };
@@ -104,7 +114,9 @@ function readCase(doc, info) {
 	var bt = doc.querySelector('.bodytext') || doc.body, text = spacedText(bt).slice(0, 4000);
 	var cites = doc.querySelectorAll('.case_cite'), vol = info.volume, pg = info.page, i, m;
 	for (i = 0; i < cites.length; i++) {
-		if ((m = /^(\d+) U\.\s?S\. (\d+)$/.exec(squash(cites[i].textContent)))) { vol = m[1]; pg = m[2]; break; }
+		if ((m = /^(\d+) U\.\s?S\. (\d+)$/.exec(squash(cites[i].textContent)))) {
+			vol = m[1]; pg = m[2]; break;
+		}
 	}
 	var d = new RegExp('Decided\\s+((?:' + MONTHS + ')\\.?\\s+\\d{1,2},?\\s+\\d{4})', 'i').exec(text);
 	var docket = /\bNos?\.\s*([\d\-–A-Za-z]+?)\.?(?:\s|$)/.exec(text);
@@ -128,7 +140,9 @@ function getSearchResults(doc) {
 	var items = {}, links = doc.querySelectorAll('ul.citelist a'), found = false;
 	for (var i = 0; i < links.length; i++) {
 		var t = squash(links[i].getAttribute('title') || links[i].textContent);
-		if (t && links[i].href) { items[links[i].href] = caseName(t); found = true; }
+		if (t && links[i].href) {
+			items[links[i].href] = caseName(t); found = true;
+		}
 	}
 	return found ? items : false;
 }
@@ -175,7 +189,6 @@ async function scrape(doc, url) {
 		item.section = info.section;
 	}
 	item.url = url.replace(/[?#].*$/, '');
-	item.libraryCatalog = 'Legal Information Institute';
 	addSnapshot(item, doc);
 	item.complete();
 }

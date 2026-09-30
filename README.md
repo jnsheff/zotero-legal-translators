@@ -75,7 +75,9 @@ run before Zotero's built-in Lexis+ translator for the same site.
 writes `translators/`. Edit `src/`, not `translators/`. `sh test/run-all.sh` checks the build is current, runs the
 parser tests (macOS `jsc`) and runs both translators against the fixtures in headless Chrome.
 
-MIT license.
+The repository is MIT-licensed; the three translators carry Zotero's AGPL-3.0 header so they can be submitted to
+the Zotero translators repository (the translators were written for that and pass its linter; the Cornell LII
+translator also passes its tests, which run against the live site in `tests/`).
 
 ## Releasing
 

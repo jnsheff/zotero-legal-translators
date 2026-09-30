@@ -1,0 +1,199 @@
+[
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/uscode/text/15/1125",
+		"items": [
+			{
+				"itemType": "statute",
+				"nameOfAct": "False designations of origin, false descriptions, and dilution forbidden",
+				"creators": [],
+				"code": "U.S.C.",
+				"codeNumber": "15",
+				"section": "1125",
+				"url": "https://www.law.cornell.edu/uscode/text/15/1125",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/cfr/text/37/42.108",
+		"items": [
+			{
+				"itemType": "statute",
+				"nameOfAct": "Institution of inter partes review",
+				"creators": [],
+				"code": "C.F.R.",
+				"codeNumber": "37",
+				"section": "42.108",
+				"url": "https://www.law.cornell.edu/cfr/text/37/42.108",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/supremecourt/text/22-174",
+		"items": [
+			{
+				"itemType": "case",
+				"caseName": "Groff v. DeJoy",
+				"creators": [],
+				"dateDecided": "June 29, 2023",
+				"court": "U.S.",
+				"docketNumber": "22-174",
+				"url": "https://www.law.cornell.edu/supremecourt/text/22-174",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/supremecourt/text/410/113",
+		"items": [
+			{
+				"itemType": "case",
+				"caseName": "Roe v. Wade",
+				"creators": [],
+				"dateDecided": "Jan. 22, 1973",
+				"court": "U.S.",
+				"docketNumber": "70-18",
+				"firstPage": "113",
+				"reporter": "U.S.",
+				"reporterVolume": "410",
+				"url": "https://www.law.cornell.edu/supremecourt/text/410/113",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/constitution/amendmentxiv",
+		"items": [
+			{
+				"itemType": "statute",
+				"nameOfAct": "14th Amendment",
+				"creators": [],
+				"code": "U.S. Const.",
+				"section": "amend. XIV",
+				"url": "https://www.law.cornell.edu/constitution/amendmentxiv",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/rules/frcp/rule_11",
+		"items": [
+			{
+				"itemType": "statute",
+				"nameOfAct": "Signing Pleadings, Motions, and Other Papers; Representations to the Court; Sanctions",
+				"creators": [],
+				"code": "Fed. R. Civ. P.",
+				"section": "11",
+				"url": "https://www.law.cornell.edu/rules/frcp/rule_11",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/ucc/2/2-207",
+		"items": [
+			{
+				"itemType": "statute",
+				"nameOfAct": "Additional Terms in Acceptance or Confirmation",
+				"creators": [],
+				"code": "U.C.C.",
+				"section": "2-207",
+				"url": "https://www.law.cornell.edu/ucc/2/2-207",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/regulations/new-york/10-NYCRR-2.1",
+		"items": [
+			{
+				"itemType": "statute",
+				"nameOfAct": "Communicable diseases designated: cases, suspected cases and certain carriers to be reported to the state department of health",
+				"creators": [],
+				"code": "N.Y. Comp. Codes R. & Regs. tit. 10",
+				"section": "2.1",
+				"shortTitle": "Communicable diseases designated",
+				"url": "https://www.law.cornell.edu/regulations/new-york/10-NYCRR-2.1",
+				"attachments": [
+					{
+						"title": "Snapshot",
+						"mimeType": "text/html"
+					}
+				],
+				"tags": [],
+				"notes": [],
+				"seeAlso": []
+			}
+		]
+	},
+	{
+		"type": "web",
+		"url": "https://www.law.cornell.edu/supremecourt/text/347/483",
+		"items": "multiple"
+	}
+]
