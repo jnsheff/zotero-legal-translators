@@ -13,7 +13,7 @@ if [ -x "$CHROME" ]; then
 	sleep 1
 	dom=$("$CHROME" --headless=new --disable-gpu --no-sandbox --virtual-time-budget=8000 --dump-dom "http://127.0.0.1:$PORT/test/harness.html" 2>/dev/null)
 	kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
-	echo "$dom" | grep -o '<pre id="out">[^<]*' | sed 's/<pre id="out">//' | head -8
+	echo "$dom" | python3 -c "import sys,re,html;m=re.search(r'<pre id=.out.>(.*?)</pre>',sys.stdin.read(),re.S);print(html.unescape(m.group(1)) if m else 'no output')"
 	echo "$dom" | grep -q '<pre id="out">HARNESS OK' || fail=1
 else
 	echo "WARNING: Google Chrome not found; open test/harness.html over http (python3 -m http.server) to run the DOM tests"

@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 00:41:24"
+	"lastUpdated": "2026-09-30 00:51:23"
 }
 
 /*
@@ -22,7 +22,7 @@ var MONTHS = 'Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul
 var DATE_RE = new RegExp('\\b(' + MONTHS + ')\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})\\b', 'i');
 
 function squash(s) {
-	return (s || '').replace(/[\u00a0\s]+/g, ' ').trim();
+	return (s || '').replace(/[\u200b-\u200f\u2060-\u2064\ufeff]/g, '').replace(/[\u00a0\s]+/g, ' ').trim();
 }
 
 // Strip the site's suffix from a page title ("... - Westlaw", "... | Lexis+")
@@ -121,6 +121,69 @@ function fixCase(s) {
 	return s;
 }
 
+var STATES = { Alabama: 'Ala.', Alaska: 'Alaska', Arizona: 'Ariz.', Arkansas: 'Ark.', California: 'Cal.', Colorado: 'Colo.', Connecticut: 'Conn.',
+	Delaware: 'Del.', 'District of Columbia': 'D.C.', Florida: 'Fla.', Georgia: 'Ga.', Hawaii: 'Haw.', Idaho: 'Idaho', Illinois: 'Ill.', Indiana: 'Ind.',
+	Iowa: 'Iowa', Kansas: 'Kan.', Kentucky: 'Ky.', Louisiana: 'La.', Maine: 'Me.', Maryland: 'Md.', Massachusetts: 'Mass.', Michigan: 'Mich.',
+	Minnesota: 'Minn.', Mississippi: 'Miss.', Missouri: 'Mo.', Montana: 'Mont.', Nebraska: 'Neb.', Nevada: 'Nev.', 'New Hampshire': 'N.H.',
+	'New Jersey': 'N.J.', 'New Mexico': 'N.M.', 'New York': 'N.Y.', 'North Carolina': 'N.C.', 'North Dakota': 'N.D.', Ohio: 'Ohio', Oklahoma: 'Okla.',
+	Oregon: 'Or.', Pennsylvania: 'Pa.', 'Rhode Island': 'R.I.', 'South Carolina': 'S.C.', 'South Dakota': 'S.D.', Tennessee: 'Tenn.', Texas: 'Tex.',
+	Utah: 'Utah', Vermont: 'Vt.', Virginia: 'Va.', Washington: 'Wash.', 'West Virginia': 'W. Va.', Wisconsin: 'Wis.', Wyoming: 'Wyo.',
+	'Puerto Rico': 'P.R.', Guam: 'Guam' };
+var STATE_CODES = { AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware',
+	DC: 'District of Columbia', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas',
+	KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi',
+	MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
+	NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island',
+	SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington',
+	WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming', PR: 'Puerto Rico' };
+var CIRCUITS = { First: '1st', Second: '2d', Third: '3d', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th',
+	Tenth: '10th', Eleventh: '11th', 'District of Columbia': 'D.C.', Federal: 'Fed.' };
+
+// A court name as the sites print it -> its Bluebook abbreviation; unrecognised names are returned as given.
+//   "United States Court of Appeals, Fifth Circuit." -> "5th Cir."    "United States District Court, E.D. Texas." -> "E.D. Tex."
+function abbrevCourt(name) {
+	var n = squash(name).replace(/[.,;\s]+$/, ''), m, div, st;
+	if (/^(?:the )?(?:United States|U\.S\.) Supreme Court$|^Supreme Court of the United States$/i.test(n)) return 'U.S.';
+	if ((m = /Court of Appeals(?:,| for the)? (?:the )?(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|Eleventh|District of Columbia|Federal) Circuit/i.exec(n))) {
+		return CIRCUITS[m[1].replace(/^./, function (c) { return c.toUpperCase(); })] + ' Cir.';
+	}
+	// Westlaw: "United States District Court, E.D. Texas"; Lexis: "United States District Court for the Eastern District of Texas"
+	if ((m = /District Court,? (?:for the )?((?:[NSEWMC]\.\s?)+D\.|D\.)\s*(.+)$/.exec(n))) {
+		div = m[1].replace(/\s/g, '');
+		st = STATES[squash(m[2]).replace(/^(?:of )?(?:the State of )?/i, '')];
+	}
+	else if ((m = /District Court,? (?:for the )?(?:(Northern|Southern|Eastern|Western|Middle|Central) )?District of (.+)$/i.exec(n))) {
+		div = (m[1] ? m[1].charAt(0).toUpperCase() + '.D.' : 'D.');
+		st = STATES[squash(m[2]).replace(/^the State of /i, '')] || STATES['District of ' + squash(m[2])];
+	}
+	if (div && st) return ((st === 'N.Y.' && div !== 'D.') || st === 'D.C.' ? div + st : div + ' ' + st);
+	if ((m = /^Supreme Court of (?:the State of )?(.+)$/i.exec(n)) && STATES[m[1]] && m[1] !== 'New York') return STATES[m[1]];
+	// unrecognised: keep an abbreviation such as "2d Cir." as it is, drop the sentence period after a full name
+	return squash(name).split(' ').length > 3 ? n : squash(name);
+}
+
+var CODE_WORDS = { Civil: 'Civ.', Criminal: 'Crim.', Business: 'Bus.', Commerce: 'Com.', Procedure: 'Proc.', Professions: 'Prof.', Practice: 'Prac.',
+	Remedies: 'Rem.', Government: 'Gov\'t', Education: 'Educ.', Insurance: 'Ins.', Labor: 'Lab.', Family: 'Fam.', Public: 'Pub.', Property: 'Prop.',
+	Revenue: 'Rev.', Transportation: 'Transp.', Vehicle: 'Veh.', Corporations: 'Corp.', Corporation: 'Corp.', Agriculture: 'Agric.',
+	Administrative: 'Admin.', Evidence: 'Evid.', Estates: 'Est.', Utilities: 'Util.', Natural: 'Nat.', Resources: 'Res.', Statutes: 'Stat.',
+	Financial: 'Fin.', Human: 'Hum.', Judiciary: 'Jud.', Legislative: 'Legis.', Municipal: 'Mun.', Occupations: 'Occ.', Regulations: 'Regs.',
+	Social: 'Soc.', Services: 'Servs.', Service: 'Serv.', Environmental: 'Envtl.', Conservation: 'Conserv.' };
+
+// "New York" + "Civil Rights Law" -> "N.Y. Civ. Rights Law"
+function stateCodeName(state, titleDesc) {
+	var words = squash(titleDesc).replace(/^Title \d+\.?\s*/i, '').split(' ').map(function (w) { return CODE_WORDS[w] || w; });
+	return squash((STATES[state] || state) + ' ' + words.join(' '));
+}
+
+// A citation with no name or parenthetical, as in a Westlaw header line: "168 F.4th 231", "2025 WL 458520"
+function parseBareCite(text) {
+	text = squash(text);
+	var m = /^(\d{4})\s+((?:WL)|(?:[A-Z][A-Za-z.]*(?: [A-Z][A-Za-z.]*)*? LEXIS))\s+(\d+)$/.exec(text);
+	if (m) return { volume: m[1], reporter: m[2], page: m[3] };
+	m = /^(\d{1,4})\s+([A-Z][A-Za-z0-9.'&\u2019 ]*?)\s+(\d{1,5})$/.exec(text);
+	return m && /[.']/.test(m[2]) ? { volume: m[1], reporter: squash(m[2]), page: m[3] } : null;
+}
+
 // A Zotero item from a parsed citation; `extra` = fields read from the page that fill any gaps.
 function buildItem(parsed, extra) {
 	extra = extra || {};
@@ -151,7 +214,7 @@ function buildItem(parsed, extra) {
 	}
 	item = new Zotero.Item('case');
 	item.caseName = fixCase(parsed.name);
-	court = parsed.court || extra.court || '';
+	court = abbrevCourt(parsed.court || extra.court || '');
 	item.court = court;
 	item.reporter = parsed.reporter;
 	item.reporterVolume = parsed.volume;
@@ -162,12 +225,12 @@ function buildItem(parsed, extra) {
 	return item;
 }
 
-// Docket number in a block of text ("No. 89-1909", "Civil Action No. 1:24-cv-01234")
+// Docket number in a block of text ("No. 89-1909", "Civil Action No. 1:24-cv-01234", "Nos. 21-1, 21-2")
 function findDocket(text) {
-	var re = /\b((?:Civil Action |Civ\. ?(?:A\. )?|Case |Docket |Cause )?Nos?\.?\s*[\w:\-.\u2013,\/ ]{2,40}?)(?=\s*(?:\n|$|;|\(|\u00b6|[A-Z][a-z]+ \d))/gi, m;
-	text = text || '';
+	var re = /\b((?:Civil Action |Civ\. ?(?:A\. )?|Case |Docket |Cause )?Nos?\.?\s*[A-Za-z0-9][\w:\-\u2013.\/]*(?:\s*(?:,|and|&)\s*\d[\w:\-\u2013.\/]*)*)/gi, m;
+	text = squash(text);
 	while ((m = re.exec(text))) {
-		if (/\d/.test(m[1])) return squash(m[1]).replace(/[,;.]$/, '');
+		if (/\d/.test(m[1])) return m[1].replace(/[,;.]+$/, '');
 	}
 	return '';
 }
@@ -206,14 +269,28 @@ function classify(page) {
 	var tries = [page.pageTitle, page.title];
 	if (page.title && page.cite) tries.push(page.title + ', ' + page.cite + (paren ? ' (' + paren + ')' : ''));
 	var parsed = null;
-	for (var i = 0; i < tries.length && !parsed; i++) parsed = tries[i] && parseCitation(tries[i]);
-	var extra = { court: page.court, date: findDate(page.date) || findDate(page.body) || '', docket: findDocket((page.info || '') + '\n' + (page.body || '').slice(0, 300)) };
+	var bare = page.cite && parseBareCite(page.cite);
+	if (bare && page.title && (page.court || / v\.? /.test(page.title))) {
+		var pp = parseParen(paren);
+		parsed = { kind: 'case', name: page.title, volume: bare.volume, reporter: bare.reporter, page: bare.page, court: pp.court || page.court, date: pp.date, year: pp.year };
+	}
+	else if (bare && page.title && NOT_A_CASE_RE.test(bare.reporter)) {
+		parsed = { kind: 'article', author: '', title: page.title, volume: bare.volume, reporter: bare.reporter, page: bare.page, year: findDate(page.date).slice(-4) };
+	}
+	for (var i = 0; !parsed && i < tries.length; i++) parsed = tries[i] && parseCitation(tries[i]);
+
+	var extra = { court: page.court, date: findDate(page.date) || findDate(page.body) || '', docket: findDocket((page.info || '') + '\n' + (page.body || '').slice(0, 1200)) };
 	if (parsed) {
 		if (parsed.kind === 'case' && parsed.date && /^\d{4}$/.test(parsed.date) && extra.date && extra.date.slice(-4) === parsed.date) parsed.date = extra.date;
 		return { parsed: parsed, extra: extra };
 	}
 	var st = [page.title, page.pageTitle, page.title + ' ' + page.cite].reduce(function (r, t) { return r || (t && parseStatute(t)); }, null);
-	return st ? { parsed: st, extra: { date: extra.date } } : null;
+	if (st && !st.rest && page.body) {
+		// the section heading in the text: "47-25-1102. Part definitions."
+		var nm = new RegExp(st.section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.\\s+([A-Z][^.]{2,120}?)\\.\\s').exec(page.body);
+		if (nm) st.rest = nm[1];
+	}
+	return st ? { parsed: st, extra: { date: extra.date, title: st.rest } } : null;
 }
 
 var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle' };
@@ -227,19 +304,26 @@ var INFO_SEL = 'p.SS_DocumentInfo'; // (*)
 var DATE_SEL = ['span.date']; // (*)
 var RESULT_LINK = 'a.titleLink'; // (*)
 
+// Text of the document after its title (used to find the section heading of a statute)
+function bodyAfter(doc, title) {
+	var t = spacedText(doc.querySelector('.document-wrapper, #document-content, main') || doc.body);
+	var i = title ? t.indexOf(title) : -1;
+	return t.slice(i < 0 ? 0 : i, (i < 0 ? 0 : i) + 4000);
+}
+
 function readPage(doc) {
 	var infos = doc.querySelectorAll(INFO_SEL), info = [];
 	for (var i = 0; i < infos.length; i++) info.push(spacedText(infos[i]));
-	var court = info[0] || '';
+	var court = info[0] || '', title = cleanTitle(firstText(doc, TITLE_SEL));
 	var date = cleanDate(firstText(doc, DATE_SEL)) || findDate(info.join(' '));
 	return {
 		pageTitle: cleanTitle(doc.title),
-		title: cleanTitle(firstText(doc, TITLE_SEL)),
+		title: title,
 		cite: firstText(doc, CITE_SEL),
 		court: /\d/.test(court) && court.length > 80 ? '' : court, // the full court name; the parsed citation's is preferred
 		date: date,
 		info: info.join('\n'),
-		body: info.join(' '),
+		body: bodyAfter(doc, title),
 	};
 }
 
@@ -267,7 +351,12 @@ async function doWeb(doc, url) {
 		let items = await Zotero.selectItems(getSearchResults(doc, false));
 		if (!items) return;
 		for (let u of Object.keys(items)) {
-			await scrape(await requestDocument(u), u);
+			try {
+				await scrape(await requestDocument(u), u);
+			}
+			catch (e) {
+				Zotero.debug('Lexis: skipped ' + u + ': ' + e.message); // news, agency decisions, etc.
+			}
 		}
 	}
 	else {

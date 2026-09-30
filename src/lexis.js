@@ -8,19 +8,26 @@ var INFO_SEL = 'p.SS_DocumentInfo'; // (*)
 var DATE_SEL = ['span.date']; // (*)
 var RESULT_LINK = 'a.titleLink'; // (*)
 
+// Text of the document after its title (used to find the section heading of a statute)
+function bodyAfter(doc, title) {
+	var t = spacedText(doc.querySelector('.document-wrapper, #document-content, main') || doc.body);
+	var i = title ? t.indexOf(title) : -1;
+	return t.slice(i < 0 ? 0 : i, (i < 0 ? 0 : i) + 4000);
+}
+
 function readPage(doc) {
 	var infos = doc.querySelectorAll(INFO_SEL), info = [];
 	for (var i = 0; i < infos.length; i++) info.push(spacedText(infos[i]));
-	var court = info[0] || '';
+	var court = info[0] || '', title = cleanTitle(firstText(doc, TITLE_SEL));
 	var date = cleanDate(firstText(doc, DATE_SEL)) || findDate(info.join(' '));
 	return {
 		pageTitle: cleanTitle(doc.title),
-		title: cleanTitle(firstText(doc, TITLE_SEL)),
+		title: title,
 		cite: firstText(doc, CITE_SEL),
 		court: /\d/.test(court) && court.length > 80 ? '' : court, // the full court name; the parsed citation's is preferred
 		date: date,
 		info: info.join('\n'),
-		body: info.join(' '),
+		body: bodyAfter(doc, title),
 	};
 }
 
@@ -48,7 +55,12 @@ async function doWeb(doc, url) {
 		let items = await Zotero.selectItems(getSearchResults(doc, false));
 		if (!items) return;
 		for (let u of Object.keys(items)) {
-			await scrape(await requestDocument(u), u);
+			try {
+				await scrape(await requestDocument(u), u);
+			}
+			catch (e) {
+				Zotero.debug('Lexis: skipped ' + u + ': ' + e.message); // news, agency decisions, etc.
+			}
 		}
 	}
 	else {

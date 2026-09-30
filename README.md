@@ -13,20 +13,26 @@ Public Law Number where present; regulations (`17 C.F.R. § 240.10b-5`) are stat
 citations become Journal Articles. Westlaw items keep the document URL (without the session query string); Lexis
 sessions links are not saved. All-capitals case names are converted to title case.
 
-## Status: not yet tried on the real sites
+## Status
 
-I had no Westlaw or Lexis access while writing these. The approach is built to survive that:
+Checked against saved pages (Westlaw Advantage case, statute and search-results pages; a Lexis+ statute page and
+a results page), not yet against a live session. Those pages are not in the repository (copyrighted, and they
+carry account details); `test/harness.html` runs the translators on them when they are in `test pages/`, and
+otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real element ids.
 
-* The **citation is parsed from the page title and the citation line** with a Bluebook-aware parser
-  (`src/shared.js`, tested on many citation forms). That does not depend on the sites' markup.
-* Page elements only **supplement** it (court, decision date, docket). The Lexis selectors marked `(*)` in
-  `src/lexis.js` are the ones Zotero's existing Lexis+ translator uses; the Westlaw selectors are from memory.
-* The fixtures in `fixtures/` are **synthetic** (markup invented to match those selectors), not saved pages.
+* **Westlaw** reads the header (`#title`, `#courtline`, `#filedate`, `#cite0`; `#cite`, `#codeSetName`,
+  `#titleDesc` for statutes) and the docket number from the document text. Results pages give one item per case or
+  code hit (briefs, practice materials and secondary sources are skipped).
+* **Lexis+** reads `h1#SS_DocumentTitle` and the reporter/info elements; statutes take the code and section from
+  the title and the section name from the heading in the text. The results page is read from `a.titleLink`; items
+  that are not cases, statutes or articles (news, agency decisions) are skipped.
+* **Not yet checked:** a Lexis case page and a Westlaw law-review page (no saved sample), so those rely on the
+  generic citation parser.
+* Courts are converted to Bluebook abbreviations where recognised (`5th Cir.`, `E.D. Tex.`, `S.D.N.Y.`, `U.S.`);
+  state codes become e.g. `N.Y. Civ. Rights Law`. Others are kept as the site prints them.
 
-So expect to adjust selectors on first use. If a page is not recognised, the translator reports no icon; send me
-the page's HTML (Save Page As... from the logged-in browser, with anything private removed) and the selectors can
-be fitted to it. Not handled yet: Lexis session laws and acts without a section number (Zotero's own Lexis+
-translator handles some of these), secondary sources other than law-review articles, dockets and filings.
+Not handled: Lexis session laws and acts without a section number, secondary sources other than law-review
+articles, dockets and filings.
 
 ## Install
 
