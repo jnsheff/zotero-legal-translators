@@ -192,12 +192,25 @@ function buildItem(parsed, extra) {
 		if (extra.date) item.dateEnacted = extra.date;
 		return item;
 	}
+	if (parsed.kind === 'treatise') {
+		item = new Zotero.Item('bookSection');
+		item.title = parsed.title;
+		item.bookTitle = parsed.bookTitle;
+		item.volume = parsed.volume;
+		item.pages = parsed.section; // Zotero has no section field for book sections; the section number goes here
+		if (parsed.edition) item.edition = parsed.edition;
+		if (parsed.date) item.date = parsed.date;
+		(parsed.author || '').split(/\s*;\s*|\s+(?:&|and)\s+/).forEach(function (a) {
+			if (squash(a)) item.creators.push(ZU.cleanAuthor(fixCase(a), 'bookAuthor'));
+		});
+		return item;
+	}
 	if (parsed.kind === 'article') {
 		item = new Zotero.Item('journalArticle');
-		item.title = fixCase(parsed.title);
+		item.title = fixCase(parsed.title.replace(/^(?:ARTICLE|RESPONSE|ESSAY|COMMENT|NOTE|SYMPOSIUM|TRIBUTE|BOOK REVIEW|FOREWORD|REPLY|COMMENTARY)S?:\s*/i, ''));
 		if (parsed.author) {
 			parsed.author.split(/\s*;\s*|\s+(?:&|and)\s+/).forEach(function (a) {
-				if (squash(a)) item.creators.push(ZU.cleanAuthor(squash(a), 'author'));
+				if (squash(a)) item.creators.push(ZU.cleanAuthor(fixCase(a), 'author'));
 			});
 		}
 		item.publicationTitle = parsed.publication || parsed.reporter;
@@ -298,10 +311,26 @@ function statuteResult(st, page, date) {
 	return { parsed: st, extra: { date: date, title: st.rest } };
 }
 
-var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle' };
+var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle', treatise: 'bookSection' };
 
 // "Author: Jeremy N. Sheff * * Associate Professor..." (Lexis) -> "Jeremy N. Sheff"
+// "Author: JEANNE C. FROMER + & MARK P. MCKENNA ++ + Professor of Law..." -> "JEANNE C. FROMER; MARK P. MCKENNA"
+// Names are read one at a time; after the footnote marks another name only follows if there is a "&", "and" or ";".
 function findAuthor(text) {
-	var m = /\bAuthors?:\s*(.+?)(?=\s+\*|\s+Text\b|\s+Length:|\s+Source:|$)/.exec(squash(text));
-	return m ? squash(m[1]).replace(/[\s*\u2020\u2021\d]+$/, '') : '';
+	var m = /\bAuthors?:\s*(.*)$/.exec(squash(text));
+	if (!m) return '';
+	var rest = m[1].replace(/\s+(?:Text|Length:|Source:)\b.*$/, ''), names = [];
+	var nameRE = /^\s*([A-Za-z][A-Za-z.'\u2019\-]*(?:\s+[A-Za-z][A-Za-z.'\u2019\-]*){1,4}?)\s*(?=[*+\u2020\u2021]|&|\band\b|;|$)/;
+	for (;;) {
+		var n = nameRE.exec(rest);
+		if (!n) break;
+		names.push(n[1]);
+		rest = rest.slice(n[0].length).replace(/^[\s*+\u2020\u2021\d]+/, '');
+		var sep = /^(?:&|and\b|;)\s*/.exec(rest);
+		if (!sep) break;
+		rest = rest.slice(sep[0].length);
+	}
+	return names.join('; ');
 }
+
+// Book-section treatises: parsed = { kind: 'treatise', title, bookTitle, volume, section, edition, date, author }

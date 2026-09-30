@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 01:49:20"
+	"lastUpdated": "2026-09-30 01:58:08"
 }
 
 /*
@@ -210,12 +210,25 @@ function buildItem(parsed, extra) {
 		if (extra.date) item.dateEnacted = extra.date;
 		return item;
 	}
+	if (parsed.kind === 'treatise') {
+		item = new Zotero.Item('bookSection');
+		item.title = parsed.title;
+		item.bookTitle = parsed.bookTitle;
+		item.volume = parsed.volume;
+		item.pages = parsed.section; // Zotero has no section field for book sections; the section number goes here
+		if (parsed.edition) item.edition = parsed.edition;
+		if (parsed.date) item.date = parsed.date;
+		(parsed.author || '').split(/\s*;\s*|\s+(?:&|and)\s+/).forEach(function (a) {
+			if (squash(a)) item.creators.push(ZU.cleanAuthor(fixCase(a), 'bookAuthor'));
+		});
+		return item;
+	}
 	if (parsed.kind === 'article') {
 		item = new Zotero.Item('journalArticle');
-		item.title = fixCase(parsed.title);
+		item.title = fixCase(parsed.title.replace(/^(?:ARTICLE|RESPONSE|ESSAY|COMMENT|NOTE|SYMPOSIUM|TRIBUTE|BOOK REVIEW|FOREWORD|REPLY|COMMENTARY)S?:\s*/i, ''));
 		if (parsed.author) {
 			parsed.author.split(/\s*;\s*|\s+(?:&|and)\s+/).forEach(function (a) {
-				if (squash(a)) item.creators.push(ZU.cleanAuthor(squash(a), 'author'));
+				if (squash(a)) item.creators.push(ZU.cleanAuthor(fixCase(a), 'author'));
 			});
 		}
 		item.publicationTitle = parsed.publication || parsed.reporter;
@@ -316,13 +329,29 @@ function statuteResult(st, page, date) {
 	return { parsed: st, extra: { date: date, title: st.rest } };
 }
 
-var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle' };
+var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle', treatise: 'bookSection' };
 
 // "Author: Jeremy N. Sheff * * Associate Professor..." (Lexis) -> "Jeremy N. Sheff"
+// "Author: JEANNE C. FROMER + & MARK P. MCKENNA ++ + Professor of Law..." -> "JEANNE C. FROMER; MARK P. MCKENNA"
+// Names are read one at a time; after the footnote marks another name only follows if there is a "&", "and" or ";".
 function findAuthor(text) {
-	var m = /\bAuthors?:\s*(.+?)(?=\s+\*|\s+Text\b|\s+Length:|\s+Source:|$)/.exec(squash(text));
-	return m ? squash(m[1]).replace(/[\s*\u2020\u2021\d]+$/, '') : '';
+	var m = /\bAuthors?:\s*(.*)$/.exec(squash(text));
+	if (!m) return '';
+	var rest = m[1].replace(/\s+(?:Text|Length:|Source:)\b.*$/, ''), names = [];
+	var nameRE = /^\s*([A-Za-z][A-Za-z.'\u2019\-]*(?:\s+[A-Za-z][A-Za-z.'\u2019\-]*){1,4}?)\s*(?=[*+\u2020\u2021]|&|\band\b|;|$)/;
+	for (;;) {
+		var n = nameRE.exec(rest);
+		if (!n) break;
+		names.push(n[1]);
+		rest = rest.slice(n[0].length).replace(/^[\s*+\u2020\u2021\d]+/, '');
+		var sep = /^(?:&|and\b|;)\s*/.exec(rest);
+		if (!sep) break;
+		rest = rest.slice(sep[0].length);
+	}
+	return names.join('; ');
 }
+
+// Book-section treatises: parsed = { kind: 'treatise', title, bookTitle, volume, section, edition, date, author }
 
 
 // Header markup (Westlaw Edge / Advantage document pages), checked against saved pages:
@@ -350,6 +379,10 @@ function readPage(doc) {
 		court: firstText(doc, ['#courtline', '.co_courtLine']),
 		date: firstText(doc, ['#filedate', '#effectiveDate', '.co_dateLine']),
 		author: firstText(doc, ['#author']),
+		treatiseCite: firstText(doc, ['.co_cites']),
+		pubTitle: firstText(doc, ['.co_publicationLine .co_headtext']),
+		pubDate: firstText(doc, ['.co_publicationLine .co_date']),
+		treatiseAuthor: firstText(doc, ['.co_authorLine']),
 		publication: firstText(doc, ['#pubname']),
 		codeSet: firstText(doc, ['#codeSetName', '#pubName']), // statutes / regulations
 		titleDesc: firstText(doc, ['#titleDesc', '#headtext']),
@@ -396,7 +429,20 @@ function articleFromHeader(page) {
 	return out;
 }
 
+// Treatise section: .co_cites "2 McCarthy on Trademarks and Unfair Competition § 18:2 (5th ed.)", .co_publicationLine
+// "McCarthy on Trademarks ... Fifth Edition | September 2026 Update", .co_authorLine "J. Thomas McCarthy"
+function treatiseFromHeader(page) {
+	if (!page.pubTitle || !page.treatiseCite) return null;
+	var m = /^(?:(\d{1,3})\s+)?(.+?)\s+\u00a7+\s*([\w:.\-]+)\s*\((?:(\d+)(?:st|nd|rd|th)\s+ed\.|[^)]*)\)\s*$/.exec(page.treatiseCite);
+	if (!m) return null;
+	var d = new RegExp('(' + MONTHS + ')\\.?,?\\s+(\\d{4})', 'i').exec(page.pubDate);
+	return { kind: 'treatise', title: page.title.replace(/^\u00a7+\s*[\w:.\-]+?\.?\s+/, ''), bookTitle: m[2], volume: m[1] || '', section: m[3], edition: m[4] || '',
+		date: d ? d[1] + ' ' + d[2] : (/\b(\d{4})\b/.exec(page.pubDate) || [])[1] || '', author: page.treatiseAuthor };
+}
+
 function classifyWestlaw(page) {
+	var tr = treatiseFromHeader(page);
+	if (tr) return { parsed: tr, extra: {} };
 	var st = statuteFromHeader(page);
 	if (st) return { parsed: st, extra: { title: st.rest } };
 	var art = articleFromHeader(page);

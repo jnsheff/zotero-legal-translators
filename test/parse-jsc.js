@@ -3,7 +3,7 @@ var errors = [];
 var Zotero = { Item: function (t) { this.itemType = t; this.creators = []; } };
 var ZU = { capitalizeTitle: function (s) { return s.replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); },
 	cleanAuthor: function (a) { var p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: 'author' }; } };
-eval(read('src/shared.js') + '; this.S = { normCode: normCode, abbrevCourt: abbrevCourt, stateCodeName: stateCodeName, parseBareCite: parseBareCite, parseCitation: parseCitation, parseStatute: parseStatute, buildItem: buildItem, cleanTitle: cleanTitle, findDocket: findDocket, findDate: findDate, classify: classify };');
+eval(read('src/shared.js') + '; this.S = { findAuthor: findAuthor, normCode: normCode, abbrevCourt: abbrevCourt, stateCodeName: stateCodeName, parseBareCite: parseBareCite, parseCitation: parseCitation, parseStatute: parseStatute, buildItem: buildItem, cleanTitle: cleanTitle, findDocket: findDocket, findDate: findDate, classify: classify };');
 function eq(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) errors.push(m + ': got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b)); }
 function pick(o, ks) { var r = {}; ks.forEach(function (k) { r[k] = o[k]; }); return r; }
 
@@ -62,4 +62,9 @@ eq(S.parseBareCite('124 Fed.R.Serv.3d 171'), { volume: '124', reporter: 'Fed.R.S
 eq(S.findDocket('Robert FLETCHER, Plaintiff—Appellant, v. EXPERIAN \u2062\u2063 No. 25-20086 FILED February 18, 2026'), 'No. 25-20086', 'docket before FILED');
 eq(S.findDocket('Civil Action No. 1:20-cv-613-SB Judge Bibas'), 'Civil Action No. 1:20-cv-613-SB', 'civil action docket'); eq(S.findDocket('no. of pages'), '', 'no docket');
 eq(['USCA', 'USCS', 'U.S.C.S.', 'U.S.C.', 'CFR', 'Tenn. Code Ann.'].map(S.normCode), ['U.S.C.', 'U.S.C.', 'U.S.C.', 'U.S.C.', 'C.F.R.', 'Tenn. Code Ann.'], 'code names');
+eq(S.findAuthor('Length: 5972 words Author: Jeremy N. Sheff * * Associate Professor of Law, St. John\'s University. Text [*48] IN his article'), 'Jeremy N. Sheff', 'one author');
+eq(S.findAuthor('Author: JEANNE C. FROMER + & MARK P. MCKENNA ++ + Professor of Law, New York University School of Law; Co-Director. ++ John P. Murphy Foundation Professor'), 'JEANNE C. FROMER; MARK P. MCKENNA', 'two authors');
+eq(S.findAuthor('Authors: Ann Lee and Bo Chan * ** Professors. Text'), 'Ann Lee; Bo Chan', 'and');
+eq(S.findAuthor('Author: Ann Lee; Bo Chan; Cy Dee * Text'), 'Ann Lee; Bo Chan; Cy Dee', 'three, semicolons');
+eq(S.findAuthor('Length: 100 words Text'), '', 'no author');
 print(errors.length ? 'PARSE FAILED\n' + errors.join('\n') : 'parse OK');

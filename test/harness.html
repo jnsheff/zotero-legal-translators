@@ -3,7 +3,7 @@
 // Runs the built translators against fixtures with mocks of Zotero's translator API.
 const WL = 'translators/Westlaw (legal).js', LX = 'translators/Lexis+ (legal).js';
 const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]+/g, (w, i) => i > 0 && !/:\s$/.test(s.slice(0, i)) && /^(and|of|the|a|an|in|on|for|to|or|v)$/.test(w) ? w : w[0].toUpperCase() + w.slice(1)),
-  cleanAuthor: a => { const p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: 'author' }; } };
+  cleanAuthor: (a, t) => { const p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: t }; } };
 async function load(path) {
   const src = await (await fetch('../' + path, { cache: 'no-store' })).text();
   const body = src.slice(src.indexOf('\n}\n') + 3); // after the JSON header
@@ -56,6 +56,10 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   const ns = (await w.doc('westlaw-statute-state.html')); ns.querySelector('#cite').remove();
   await w.T.doWeb(ns, NU); const ni = w.items[w.items.length - 1];
   eq(pick(ni, ['code', 'section', 'nameOfAct']), { code: 'N.Y. Civ. Rights Law', section: '50-f', nameOfAct: 'Right of publicity' }, 'WL state statute from code set and title');
+  eq(w.T.detectWeb(await w.doc('westlaw-treatise.html'), D), 'bookSection', 'WL treatise'); await w.T.doWeb(await w.doc('westlaw-treatise.html'), D);
+  { const t = w.items[w.items.length - 1];
+    eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'pages', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', pages: '18:2', edition: '5', date: 'September 2026' }, 'WL treatise item');
+    eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:J. Thomas|McCarthy'], 'WL treatise author'); }
   eq(w.T.detectWeb(await w.doc('other.html'), D), false, 'WL other document page');
   eq(w.T.detectWeb(await w.doc('other.html'), 'https://1.next.westlaw.com/Home.html'), false, 'WL home');
   const L = 'https://1.next.westlaw.com/Search/Results.html?query=x';
@@ -80,7 +84,11 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   { const a = x.items[x.items.length - 1];
     eq(pick(a, ['title', 'publicationTitle', 'volume', 'pages', 'date']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harv. L. Rev.', volume: '113', pages: '501', date: 'April 2000' }, 'LX article item');
     eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Lawrence|Lessig'], 'LX article author'); }
-  x.items.splice(2, 3); // keep the count below
+  eq(x.T.detectWeb(await x.doc('lexis-treatise.html'), LU), 'bookSection', 'LX treatise'); await x.T.doWeb(await x.doc('lexis-treatise.html'), LU);
+  eq(pick(x.items[x.items.length - 1], ['itemType', 'title', 'bookTitle', 'volume', 'pages']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', pages: '1207' }, 'LX treatise item');
+  await x.T.doWeb(await x.doc('lexis-joint.html'), LU);
+  eq(x.items[x.items.length - 1].creators.map(c => c.firstName + '|' + c.lastName), ['Jeanne C.|Fromer', 'Mark P.|McKenna'], 'LX joint authors');
+  x.items.splice(2, 5); // keep the count below
   eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
   await x.T.doWeb(await x.doc('lexis-results.html'), LU);
   eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
@@ -99,6 +107,13 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     eq(RW.T.detectWeb(rs, 'https://1.next.westlaw.com/Document/N3CE4D4E2D75F11F0AB4D95D7E6BE7963/View/FullText.html'), 'statute', 'real statute detect');
     await RW.T.doWeb(rs, 'https://1.next.westlaw.com/Document/N3CE4D4E2D75F11F0AB4D95D7E6BE7963/View/FullText.html');
     eq(pick(RW.items[1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'N.Y. Civ. Rights Law', codeNumber: '', section: '50-f', nameOfAct: 'Right of publicity' }, 'real statute item');
+    const rwt = await fetch('../test pages/westlaw-treatise.html', { cache: 'no-store' });
+    if (rwt.ok) {
+      const rd = new DOMParser().parseFromString(await rwt.text(), 'text/html'), tu = 'https://1.next.westlaw.com/Document/I37d38a6220fc11dc831aeff3279daa61/View/FullText.html';
+      eq(RW.T.detectWeb(rd, tu), 'bookSection', 'real Westlaw treatise detect'); await RW.T.doWeb(rd, tu); const t = RW.items.pop();
+      eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'pages', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule\u2014Trademark cannot be assigned apart from the good will it symbolizes', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', pages: '18:2', edition: '5', date: 'September 2026' }, 'real Westlaw treatise item');
+      eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:J. Thomas|McCarthy'], 'real Westlaw treatise author');
+    }
     const ra = await rp('article'), au = 'https://1.next.westlaw.com/Document/If9416b51b20911e28578f7ccc38dcbee/View/FullText.html';
     if (ra) {
       eq(RW.T.detectWeb(ra, au), 'journalArticle', 'real article detect'); await RW.T.doWeb(ra, au);
@@ -146,8 +161,21 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       const rd = new DOMParser().parseFromString(await rar.text(), 'text/html');
       eq(RX.T.detectWeb(rd, u), 'journalArticle', 'real Lexis article detect'); await RX.T.doWeb(rd, u);
       const a = RX.items.pop();
-      eq(pick(a, ['itemType', 'title', 'publicationTitle', 'volume', 'pages', 'date']), { itemType: 'journalArticle', title: 'Response: Accentuate the Normative: A Response to Professor McKenna', publicationTitle: 'Va. L. Rev. In Brief', volume: '98', pages: '48', date: 'October 2012' }, 'real Lexis article item');
+      eq(pick(a, ['itemType', 'title', 'publicationTitle', 'volume', 'pages', 'date']), { itemType: 'journalArticle', title: 'Accentuate the Normative: A Response to Professor McKenna', publicationTitle: 'Va. L. Rev. In Brief', volume: '98', pages: '48', date: 'October 2012' }, 'real Lexis article item');
       eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Jeremy N.|Sheff'], 'real Lexis article author');
+    }
+    const rlt = await fetch('../test pages/lexis-treatise.html', { cache: 'no-store' });
+    if (rlt.ok) {
+      const rd = new DOMParser().parseFromString(await rlt.text(), 'text/html');
+      eq(RX.T.detectWeb(rd, u), 'bookSection', 'real Lexis treatise detect'); await RX.T.doWeb(rd, u); const t = RX.items.pop();
+      eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'pages']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', pages: '1207' }, 'real Lexis treatise item');
+    }
+    const rlj = await fetch('../test pages/lexis-joint-authors.html', { cache: 'no-store' });
+    if (rlj.ok) {
+      const rd = new DOMParser().parseFromString(await rlj.text(), 'text/html');
+      eq(RX.T.detectWeb(rd, u), 'journalArticle', 'real Lexis joint-author detect'); await RX.T.doWeb(rd, u); const t = RX.items.pop();
+      eq(pick(t, ['title', 'publicationTitle', 'volume', 'pages', 'date']), { title: 'Claiming Design', publicationTitle: 'U. Pa. L. Rev.', volume: '167', pages: '123', date: 'December 2018' }, 'real Lexis joint-author item');
+      eq(t.creators.map(c => c.firstName + '|' + c.lastName), ['Jeanne C.|Fromer', 'Mark P.|McKenna'], 'real Lexis joint authors');
     }
     const ll = await rlp('list'); eq(RX.T.detectWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'), 'multiple', 'real Lexis results detect');
     await RX.T.doWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'); real += '; Lexis statute, results (' + RX.picks[0] + ' results)';

@@ -28,6 +28,8 @@ function readPage(doc) {
 		date: date,
 		info: info.join('\n'),
 		body: bodyAfter(doc, title),
+		banner: firstText(doc, ['h2.SS_Banner']),
+		crumb: firstText(doc, ['.SS_TOCTrail li a']),
 		author: findAuthor(bodyAfter(doc, title)),
 	};
 }
@@ -59,9 +61,22 @@ function watchForChanges(doc) {
 	}
 }
 
+// Treatise section: h1 "8 Gilson on Trademarks 1207", breadcrumb trail starting with the book title,
+// banner (h2.SS_Banner) "1207 Refusal on Basis of ..."
+function treatiseFromPage(page) {
+	var m = /^(\d{1,3})\s+(.+?)\s+(\d[\w.:\-]*)$/.exec(page.title), b = /^(\S+)\s+(.+)$/.exec(page.banner || '');
+	if (!m || !b || b[1] !== m[3] || /\u00a7/.test(page.title)) return null;
+	return { kind: 'treatise', title: b[2], bookTitle: page.crumb || m[2], volume: m[1], section: m[3], edition: '', date: '', author: '' };
+}
+
+function classifyLexis(page) {
+	var tr = treatiseFromPage(page);
+	return tr ? { parsed: tr, extra: {} } : classify(page);
+}
+
 function detect(doc, url) {
 	if (doc.title && /\bresults\b/i.test(doc.title) && getSearchResults(doc, true)) return 'multiple';
-	var c = classify(readPage(doc));
+	var c = classifyLexis(readPage(doc));
 	return c ? TYPE_OF[c.parsed.kind] : false;
 }
 
@@ -97,7 +112,7 @@ async function doWeb(doc, url) {
 }
 
 async function scrape(doc, url) {
-	var c = classify(readPage(doc));
+	var c = classifyLexis(readPage(doc));
 	if (!c) throw new Error('Lexis: could not read a citation from this page');
 	var item = buildItem(c.parsed, c.extra);
 	// Lexis URLs are long session links that do not work for anyone else, so none is saved

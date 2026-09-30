@@ -25,6 +25,10 @@ function readPage(doc) {
 		court: firstText(doc, ['#courtline', '.co_courtLine']),
 		date: firstText(doc, ['#filedate', '#effectiveDate', '.co_dateLine']),
 		author: firstText(doc, ['#author']),
+		treatiseCite: firstText(doc, ['.co_cites']),
+		pubTitle: firstText(doc, ['.co_publicationLine .co_headtext']),
+		pubDate: firstText(doc, ['.co_publicationLine .co_date']),
+		treatiseAuthor: firstText(doc, ['.co_authorLine']),
 		publication: firstText(doc, ['#pubname']),
 		codeSet: firstText(doc, ['#codeSetName', '#pubName']), // statutes / regulations
 		titleDesc: firstText(doc, ['#titleDesc', '#headtext']),
@@ -71,7 +75,20 @@ function articleFromHeader(page) {
 	return out;
 }
 
+// Treatise section: .co_cites "2 McCarthy on Trademarks and Unfair Competition § 18:2 (5th ed.)", .co_publicationLine
+// "McCarthy on Trademarks ... Fifth Edition | September 2026 Update", .co_authorLine "J. Thomas McCarthy"
+function treatiseFromHeader(page) {
+	if (!page.pubTitle || !page.treatiseCite) return null;
+	var m = /^(?:(\d{1,3})\s+)?(.+?)\s+\u00a7+\s*([\w:.\-]+)\s*\((?:(\d+)(?:st|nd|rd|th)\s+ed\.|[^)]*)\)\s*$/.exec(page.treatiseCite);
+	if (!m) return null;
+	var d = new RegExp('(' + MONTHS + ')\\.?,?\\s+(\\d{4})', 'i').exec(page.pubDate);
+	return { kind: 'treatise', title: page.title.replace(/^\u00a7+\s*[\w:.\-]+?\.?\s+/, ''), bookTitle: m[2], volume: m[1] || '', section: m[3], edition: m[4] || '',
+		date: d ? d[1] + ' ' + d[2] : (/\b(\d{4})\b/.exec(page.pubDate) || [])[1] || '', author: page.treatiseAuthor };
+}
+
 function classifyWestlaw(page) {
+	var tr = treatiseFromHeader(page);
+	if (tr) return { parsed: tr, extra: {} };
 	var st = statuteFromHeader(page);
 	if (st) return { parsed: st, extra: { title: st.rest } };
 	var art = articleFromHeader(page);
