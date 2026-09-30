@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 01:19:27"
+	"lastUpdated": "2026-09-30 01:37:37"
 }
 
 /*
@@ -107,6 +107,10 @@ function parseStatute(text) {
 	var m = /^(\d{1,3})\s+([A-Z][A-Za-z.&'\u2019 ]*?[A-Za-z.])\s+(?:\u00a7+|Sec(?:tions?|s?)\.?)\s*([\w.()\-\u2013,]+)/.exec(text);
 	var out;
 	if (m) out = { kind: 'statute', codeNumber: m[1], code: normCode(m[2]), section: m[3].replace(/[,.]$/, '') };
+	else if ((m = /^(\d{1,3})\s+(U\.?S\.?C\.?[AS]?\.?|C\.?F\.?R\.?)\s+(?:\u00a7+\s*)?(\d[\w.()\-\u2013]*)/i.exec(text))) {
+		// "37 CFR 42.108", "15 USC 1127"
+		out = { kind: 'statute', codeNumber: m[1], code: normCode(m[2]), section: m[3].replace(/[,.]$/, '') };
+	}
 	else if ((m = /^([A-Z][A-Za-z.&'\u2019 ]*?[A-Za-z.])\s+(?:\u00a7+|Sec(?:tions?|s?)\.?)\s*([\w.()\-\u2013,]+)/.exec(text))) {
 		out = { kind: 'statute', codeNumber: '', code: squash(m[1]), section: m[2].replace(/[,.]$/, '') };
 	}
@@ -278,6 +282,9 @@ function classify(page) {
 	var tries = [page.pageTitle, page.title];
 	if (page.title && page.cite) tries.push(page.title + ', ' + page.cite + (paren ? ' (' + paren + ')' : ''));
 	var parsed = null;
+	// a code section (title "37 CFR 42.108", "15 USCS \u00a7 1127") is never a case, whatever else the page says
+	var early = page.title && !/ v\.? /.test(page.title) && parseStatute(page.title);
+	if (early) return statuteResult(early, page, findDate(page.date) || findDate(page.body) || '');
 	var bare = page.cite && parseBareCite(page.cite);
 	if (bare && page.title && (page.court || / v\.? /.test(page.title))) {
 		var pp = parseParen(paren);
@@ -294,12 +301,16 @@ function classify(page) {
 		return { parsed: parsed, extra: extra };
 	}
 	var st = [page.title, page.pageTitle, page.title + ' ' + page.cite].reduce(function (r, t) { return r || (t && parseStatute(t)); }, null);
-	if (st && !st.rest && page.body) {
+	return st ? statuteResult(st, page, extra.date) : null;
+}
+
+function statuteResult(st, page, date) {
+	if (!st.rest && page.body) {
 		// the section heading in the text: "47-25-1102. Part definitions."
 		var nm = new RegExp(st.section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.\\s+([A-Z][^.]{2,120}?)\\.\\s').exec(page.body);
 		if (nm) st.rest = nm[1];
 	}
-	return st ? { parsed: st, extra: { date: extra.date, title: st.rest } } : null;
+	return { parsed: st, extra: { date: date, title: st.rest } };
 }
 
 var TYPE_OF = { 'case': 'case', statute: 'statute', article: 'journalArticle' };
@@ -329,7 +340,7 @@ function readPage(doc) {
 		pageTitle: cleanTitle(doc.title),
 		title: title,
 		cite: firstText(doc, CITE_SEL),
-		court: /\d/.test(court) && court.length > 80 ? '' : court, // the full court name; the parsed citation's is preferred
+		court: /\b(?:Court|Circuit|Tribunal|Judicial|Bankruptcy|Board|Commission)\b/i.test(court) && court.length < 120 ? court : '', // not "Current through ..." (codes, regulations)
 		date: date,
 		info: info.join('\n'),
 		body: bodyAfter(doc, title),
@@ -337,6 +348,7 @@ function readPage(doc) {
 }
 
 function detectWeb(doc, url) {
+	watchForChanges(doc);
 	try {
 		var type = detect(doc, url);
 		Zotero.debug('Lexis (legal): detectWeb -> ' + type + ' for ' + url.replace(/[?#].*$/, ''));
@@ -346,6 +358,21 @@ function detectWeb(doc, url) {
 	catch (e) {
 		Zotero.debug('Lexis (legal): detectWeb failed: ' + e + ' ' + (e && e.stack));
 		throw e;
+	}
+}
+
+// The site draws the document after the page has loaded (and replaces it when you navigate within the
+// site), so ask the connector to run detection again when the page changes.
+function watchForChanges(doc) {
+	try {
+		// once per page: each call would otherwise add another observer
+		if (doc.body && !doc.body.getAttribute('data-zotero-legal-watch') && typeof Z !== 'undefined' && Z.monitorDOMChanges) {
+			doc.body.setAttribute('data-zotero-legal-watch', '1');
+			Z.monitorDOMChanges(doc.body, { childList: true, subtree: true });
+		}
+	}
+	catch (e) {
+		Zotero.debug('Lexis (legal): monitorDOMChanges: ' + e);
 	}
 }
 

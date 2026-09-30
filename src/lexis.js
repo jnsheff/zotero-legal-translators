@@ -24,7 +24,7 @@ function readPage(doc) {
 		pageTitle: cleanTitle(doc.title),
 		title: title,
 		cite: firstText(doc, CITE_SEL),
-		court: /\d/.test(court) && court.length > 80 ? '' : court, // the full court name; the parsed citation's is preferred
+		court: /\b(?:Court|Circuit|Tribunal|Judicial|Bankruptcy|Board|Commission)\b/i.test(court) && court.length < 120 ? court : '', // not "Current through ..." (codes, regulations)
 		date: date,
 		info: info.join('\n'),
 		body: bodyAfter(doc, title),
@@ -32,6 +32,7 @@ function readPage(doc) {
 }
 
 function detectWeb(doc, url) {
+	watchForChanges(doc);
 	try {
 		var type = detect(doc, url);
 		Zotero.debug('Lexis (legal): detectWeb -> ' + type + ' for ' + url.replace(/[?#].*$/, ''));
@@ -41,6 +42,21 @@ function detectWeb(doc, url) {
 	catch (e) {
 		Zotero.debug('Lexis (legal): detectWeb failed: ' + e + ' ' + (e && e.stack));
 		throw e;
+	}
+}
+
+// The site draws the document after the page has loaded (and replaces it when you navigate within the
+// site), so ask the connector to run detection again when the page changes.
+function watchForChanges(doc) {
+	try {
+		// once per page: each call would otherwise add another observer
+		if (doc.body && !doc.body.getAttribute('data-zotero-legal-watch') && typeof Z !== 'undefined' && Z.monitorDOMChanges) {
+			doc.body.setAttribute('data-zotero-legal-watch', '1');
+			Z.monitorDOMChanges(doc.body, { childList: true, subtree: true });
+		}
+	}
+	catch (e) {
+		Zotero.debug('Lexis (legal): monitorDOMChanges: ' + e);
 	}
 }
 

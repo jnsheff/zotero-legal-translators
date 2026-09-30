@@ -79,6 +79,7 @@ function classifyWestlaw(page) {
 }
 
 function detectWeb(doc, url) {
+	watchForChanges(doc);
 	try {
 		var type = detect(doc, url);
 		Zotero.debug('Westlaw (legal): detectWeb -> ' + type + ' for ' + url.replace(/[?#].*$/, ''));
@@ -88,6 +89,21 @@ function detectWeb(doc, url) {
 	catch (e) {
 		Zotero.debug('Westlaw (legal): detectWeb failed: ' + e + ' ' + (e && e.stack));
 		throw e;
+	}
+}
+
+// The site draws the document after the page has loaded (and replaces it when you navigate within the
+// site), so ask the connector to run detection again when the page changes.
+function watchForChanges(doc) {
+	try {
+		// once per page: each call would otherwise add another observer
+		if (doc.body && !doc.body.getAttribute('data-zotero-legal-watch') && typeof Z !== 'undefined' && Z.monitorDOMChanges) {
+			doc.body.setAttribute('data-zotero-legal-watch', '1');
+			Z.monitorDOMChanges(doc.body, { childList: true, subtree: true });
+		}
+	}
+	catch (e) {
+		Zotero.debug('Westlaw (legal): monitorDOMChanges: ' + e);
 	}
 }
 

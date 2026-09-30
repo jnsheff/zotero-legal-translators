@@ -12,8 +12,9 @@ async function load(path) {
     selectItems: async (o) => { picks.push(Object.keys(o).length); return o; } };
   const doc = async (name) => new DOMParser().parseFromString(await (await fetch('../fixtures/' + name, { cache: 'no-store' })).text(), 'text/html');
   const requestDocument = async (u) => doc(/westlaw\.com/.test(u) ? 'westlaw-case.html' : u.split('/').pop());
-  const T = new Function('Zotero', 'ZU', 'requestDocument', body + ';return { detectWeb, doWeb };')(Zotero, ZU, requestDocument);
-  return { T, items, picks, doc };
+  const Z = { calls: 0, monitorDOMChanges() { this.calls++; } };
+  const T = new Function('Zotero', 'ZU', 'requestDocument', 'Z', body + ';return { detectWeb, doWeb };')(Zotero, ZU, requestDocument, Z);
+  return { T, items, picks, doc, Z };
 }
 const errors = [];
 const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) errors.push(m + ': got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b)); };
@@ -68,6 +69,13 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     { caseName: "Feist Publ'ns, Inc. v. Rural Tel. Serv. Co.", reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: undefined, libraryCatalog: 'Lexis+' }, 'LX case item');
   eq(x.T.detectWeb(await x.doc('lexis-statute.html'), LU), 'statute', 'LX statute'); await x.T.doWeb(await x.doc('lexis-statute.html'), LU);
   eq(pick(x.items[1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '47', section: '230' }, 'LX statute item');
+  { const d = await x.doc('lexis-case.html'); const before = x.Z.calls; x.T.detectWeb(d, LU); x.T.detectWeb(d, LU); x.T.detectWeb(d, LU);
+    eq(x.Z.calls - before, 1, 'the DOM observer is requested once per page, however often detectWeb runs'); }
+  for (const n of ['lexis-regulation.html', 'lexis-regulation2.html']) {
+    eq(x.T.detectWeb(await x.doc(n), LU), 'statute', n + ' is a statute, not a case'); await x.T.doWeb(await x.doc(n), LU);
+    eq(pick(x.items[x.items.length - 1], ['itemType', 'code', 'codeNumber', 'section']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108' }, n + ' item');
+  }
+  x.items.splice(2, 2); // keep the count below
   eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
   await x.T.doWeb(await x.doc('lexis-results.html'), LU);
   eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
