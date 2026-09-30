@@ -1,0 +1,62 @@
+<!doctype html><meta charset=utf-8><title>translator harness</title><pre id=out>running…</pre>
+<script>
+// Runs the built translators against fixtures with mocks of Zotero's translator API.
+const WL = 'translators/Westlaw (legal).js', LX = 'translators/Lexis+ (legal).js';
+const ZU = { capitalizeTitle: s => s.replace(/\b[a-z]/g, c => c.toUpperCase()),
+  cleanAuthor: a => { const p = a.split(' '); return { firstName: p.slice(0, -1).join(' '), lastName: p.slice(-1)[0], creatorType: 'author' }; } };
+async function load(path) {
+  const src = await (await fetch('../' + path, { cache: 'no-store' })).text();
+  const body = src.slice(src.indexOf('\n}\n') + 3); // after the JSON header
+  const items = [], picks = [];
+  const Zotero = { Item: class { constructor(t) { this.itemType = t; this.creators = []; this.tags = []; this.notes = []; } complete() { items.push(this); } },
+    selectItems: async (o) => { picks.push(Object.keys(o).length); return o; } };
+  const doc = async (name) => new DOMParser().parseFromString(await (await fetch('../fixtures/' + name, { cache: 'no-store' })).text(), 'text/html');
+  const requestDocument = async (u) => doc(/westlaw\.com/.test(u) ? 'westlaw-case.html' : u.split('/').pop());
+  const T = new Function('Zotero', 'ZU', 'requestDocument', body + ';return { detectWeb, doWeb };')(Zotero, ZU, requestDocument);
+  return { T, items, picks, doc };
+}
+const errors = [];
+const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) errors.push(m + ': got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b)); };
+const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
+(async () => {
+  // header sanity: the target regex matches what it should
+  for (const [p, yes, no] of [[WL, 'https://1.next.westlaw.com/Document/I1/View/FullText.html', 'https://example.com/westlaw.com'], [LX, 'https://plus.lexis.com/api/document?x=1', 'https://www.lexisnexis.com/']]) {
+    const h = JSON.parse((await (await fetch('../' + p, { cache: 'no-store' })).text()).split('\n}\n')[0] + '\n}');
+    if (!new RegExp(h.target).test(yes)) errors.push(p + ': target misses ' + yes);
+    if (new RegExp(h.target).test(no)) errors.push(p + ': target matches ' + no);
+  }
+  let w = await load(WL);
+  const D = 'https://1.next.westlaw.com/Document/I1/View/FullText.html?transitionType=x&contextData=(sc.Search)';
+  eq(w.T.detectWeb(await w.doc('westlaw-case.html'), D), 'case', 'WL case detect');
+  await w.T.doWeb(await w.doc('westlaw-case.html'), D);
+  eq(pick(w.items[0], ['itemType', 'caseName', 'reporter', 'reporterVolume', 'firstPage', 'dateDecided', 'url', 'libraryCatalog']),
+    { itemType: 'case', caseName: 'Feist Publications, Inc. v. Rural Telephone Service Co., Inc.', reporter: 'U.S.', reporterVolume: '499', firstPage: '340', dateDecided: 'March 27, 1991', url: 'https://1.next.westlaw.com/Document/I1/View/FullText.html', libraryCatalog: 'Westlaw' }, 'WL case item');
+  eq(w.items[0].docketNumber, 'No. 89-1909', 'WL docket from the body');
+  eq(w.T.detectWeb(await w.doc('westlaw-case-notitle.html'), D), 'case', 'WL case from header fields');
+  await w.T.doWeb(await w.doc('westlaw-case-notitle.html'), D);
+  eq(pick(w.items[1], ['reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided']), { reporter: 'WL', reporterVolume: '2025', firstPage: '458520', court: 'United States District Court, D. Delaware', dateDecided: 'Feb 11, 2025' }, 'WL unpublished from header');
+  eq(w.T.detectWeb(await w.doc('westlaw-statute.html'), D), 'statute', 'WL statute'); await w.T.doWeb(await w.doc('westlaw-statute.html'), D);
+  eq(pick(w.items[2], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'U.S.C.A.', codeNumber: '47', section: '230', nameOfAct: 'Protection for private blocking and screening of offensive material' }, 'WL statute item');
+  eq(w.T.detectWeb(await w.doc('westlaw-article.html'), D), 'journalArticle', 'WL article'); await w.T.doWeb(await w.doc('westlaw-article.html'), D);
+  eq(pick(w.items[3], ['publicationTitle', 'volume', 'pages', 'date']), { publicationTitle: 'Harv. L. Rev.', volume: '113', pages: '501', date: '2000' }, 'WL article item');
+  eq(w.T.detectWeb(await w.doc('other.html'), D), false, 'WL other document page');
+  eq(w.T.detectWeb(await w.doc('other.html'), 'https://1.next.westlaw.com/Home.html'), false, 'WL home');
+  const L = 'https://1.next.westlaw.com/Search/Results.html?query=x';
+  eq(w.T.detectWeb(await w.doc('westlaw-list.html'), L), 'multiple', 'WL list');
+  eq(w.T.detectWeb(await w.doc('westlaw-list.html'), D), false, 'a document URL is never a list');
+  // Lexis
+  let x = await load(LX);
+  const LU = 'https://plus.lexis.com/api/document?pdmfid=1&crid=abc';
+  eq(x.T.detectWeb(await x.doc('lexis-case.html'), LU), 'case', 'LX case'); await x.T.doWeb(await x.doc('lexis-case.html'), LU);
+  eq(pick(x.items[0], ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'libraryCatalog']),
+    { caseName: "Feist Publ'ns, Inc. v. Rural Tel. Serv. Co.", reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'Supreme Court of the United States', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: undefined, libraryCatalog: 'Lexis+' }, 'LX case item');
+  eq(x.T.detectWeb(await x.doc('lexis-statute.html'), LU), 'statute', 'LX statute'); await x.T.doWeb(await x.doc('lexis-statute.html'), LU);
+  eq(pick(x.items[1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.S.', codeNumber: '47', section: '230' }, 'LX statute item');
+  eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
+  await x.T.doWeb(await x.doc('lexis-results.html'), LU);
+  eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
+  await w.T.doWeb(await w.doc('westlaw-list.html'), L).catch(e => errors.push('WL list scrape: ' + e.message));
+  eq(w.picks, [2], 'WL list: duplicates by URL collapsed');
+  document.getElementById('out').textContent = errors.length ? 'HARNESS FAILED\n' + errors.join('\n') : 'HARNESS OK (' + w.items.length + ' + ' + x.items.length + ' items)';
+})().catch(e => { document.getElementById('out').textContent = 'HARNESS FAILED\nexception: ' + e.stack; });
+</script>
