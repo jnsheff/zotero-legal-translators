@@ -44,6 +44,9 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(w.T.detectWeb(await w.doc('westlaw-statute-usca.html'), RU), 'statute', 'WL 15 USCA § 1125 (address from a real page)');
   await w.T.doWeb(await w.doc('westlaw-statute-usca.html'), RU);
   eq(pick(w.items[w.items.length - 1], ['code', 'codeNumber', 'section', 'nameOfAct', 'url']), { code: 'U.S.C.', codeNumber: '15', section: '1125', nameOfAct: 'False designations of origin, false descriptions, and dilution forbidden', url: 'https://1.next.westlaw.com/Document/N2DC564D01A1611E29721A053D49F2B3B/View/FullText.html' }, 'WL 15 USCA item');
+  const RG = 'https://1.next.westlaw.com/Document/NDE5168613A9411EB9BAAAE2499FFFA5E/View/FullText.html?listSource=Search';
+  eq(w.T.detectWeb(await w.doc('westlaw-regulation.html'), RG), 'statute', 'WL regulation detect'); await w.T.doWeb(await w.doc('westlaw-regulation.html'), RG);
+  eq(pick(w.items[w.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review' }, 'WL regulation item');
   // statute with no usable citation line, and reached through a URL that is not /Document/
   const NU = 'https://1.next.westlaw.com/Some/Other/Path.html';
   const nc = (await w.doc('westlaw-statute.html')); nc.querySelector('#cite').remove(); nc.querySelector('#titleDesc').textContent = 'Title 47. Telecommunications';
@@ -88,6 +91,12 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       eq(RW.T.detectWeb(ra, au), 'journalArticle', 'real article detect'); await RW.T.doWeb(ra, au);
       eq(pick(RW.items[2], ['itemType', 'title', 'publicationTitle', 'journalAbbreviation', 'volume', 'pages', 'date']), { itemType: 'journalArticle', title: 'Marks, Morals, and Markets', publicationTitle: 'Stanford Law Review', journalAbbreviation: 'Stan. L. Rev.', volume: '65', pages: '761', date: 'April 2013' }, 'real article item');
       eq(RW.items[2].creators.map(c => c.firstName + '|' + c.lastName), ['Jeremy N.|Sheff'], 'real article author');
+    }
+    const rr = await fetch('../test pages/' + encodeURIComponent('§ 42.108 Institution of inter partes review. _ Regulations _ United States _ Westlaw Advantage.html'), { cache: 'no-store' });
+    if (rr.ok) {
+      const rd = new DOMParser().parseFromString(await rr.text(), 'text/html');
+      eq(RW.T.detectWeb(rd, RG), 'statute', 'real regulation detect'); await RW.T.doWeb(rd, RG);
+      eq(pick(RW.items[RW.items.length - 1], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review' }, 'real regulation item');
     }
     const rl = await rp('list'), lu = 'https://1.next.westlaw.com/Search/Results.html?query=ai%20hallucination&jurisdiction=ALLCASES';
     eq(RW.T.detectWeb(rl, lu), 'multiple', 'real list detect'); await RW.T.doWeb(rl, lu);

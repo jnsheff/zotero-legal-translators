@@ -9,7 +9,7 @@
 	"inRepository": false,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-09-30 01:19:27"
+	"lastUpdated": "2026-09-30 01:24:04"
 }
 
 /*
@@ -331,8 +331,8 @@ function readPage(doc) {
 		date: firstText(doc, ['#filedate', '#effectiveDate', '.co_dateLine']),
 		author: firstText(doc, ['#author']),
 		publication: firstText(doc, ['#pubname']),
-		codeSet: firstText(doc, ['#codeSetName']),
-		titleDesc: firstText(doc, ['#titleDesc']),
+		codeSet: firstText(doc, ['#codeSetName', '#pubName']), // statutes / regulations
+		titleDesc: firstText(doc, ['#titleDesc', '#headtext']),
 		info: '',
 		body: spacedText(body).slice(0, 3000),
 	};
@@ -357,7 +357,7 @@ function statuteFromHeader(page) {
 		else return null;
 	}
 	else return null;
-	if (t) out.rest = t[2].replace(/\s*\[[^\]]*\]\s*$/, ''); // "[Statutory Text & Notes of Decisions subdivisions I to III]"
+	if (t) out.rest = t[2].replace(/\s*\[[^\]]*\]\s*$/, '').replace(/\.$/, ''); // "[Statutory Text & Notes of Decisions subdivisions I to III]"
 	return out;
 }
 
