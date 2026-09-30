@@ -1,0 +1,14 @@
+{
+  "manifest_version": 2,
+  "name": "Legal Translators (Westlaw, Lexis+, Cornell LII)",
+  "version": "0.1.0",
+  "description": "Installs web translators for Westlaw, Lexis+ and the Cornell Legal Information Institute, so the Zotero Connector can save cases, statutes, regulations, articles and treatises.",
+  "applications": {
+    "zotero": {
+      "id": "zotero-legal-translators@zotero.local",
+      "update_url": "https://raw.githubusercontent.com/jnsheff/zotero-legal-translators/main/updates.json",
+      "strict_min_version": "8.999",
+      "strict_max_version": "10.0.*"
+    }
+  }
+}

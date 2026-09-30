@@ -1,0 +1,19 @@
+{
+  "addons": {
+    "zotero-legal-translators@zotero.local": {
+      "updates": [
+        {
+          "version": "0.1.0",
+          "update_link": "https://github.com/jnsheff/zotero-legal-translators/releases/download/v0.1.0/zotero-legal-translators.xpi",
+          "update_hash": "sha256:862d7d7cdc72383b0f2d4e42a398e3e6676bd37178e8ff068032f63ea0255efd",
+          "applications": {
+            "zotero": {
+              "strict_min_version": "8.999",
+              "strict_max_version": "10.0.*"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

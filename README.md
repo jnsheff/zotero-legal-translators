@@ -60,8 +60,13 @@ account name, so their snapshots contain them.
 
 ## Install
 
-Copy the two `.js` files from `translators/` into Zotero's `translators` directory (Zotero > Settings >
-Advanced > Files and Folders > Show Data Directory > `translators`), then restart Zotero. Priority 90 makes them
+**Easiest:** download `zotero-legal-translators.xpi` from the latest release and install it in Zotero (Tools >
+Plugins > gear menu > Install Plugin From File). It copies the three translators into Zotero's translators folder
+at every start (replacing older copies) and removes them if you uninstall the plugin. Restart Firefox afterwards,
+because the connector keeps its own cache of translators. (Automatic updates need the repository to be public.)
+
+**By hand:** copy the `.js` files from `translators/` into the `translators` folder of your Zotero data directory
+(Zotero > Settings > Advanced > Files and Folders > Show Data Directory), then restart Zotero. Priority 90 makes them
 run before Zotero's built-in Lexis+ translator for the same site.
 
 ## Develop
@@ -71,3 +76,8 @@ writes `translators/`. Edit `src/`, not `translators/`. `sh test/run-all.sh` che
 parser tests (macOS `jsc`) and runs both translators against the fixtures in headless Chrome.
 
 MIT license.
+
+## Releasing
+
+`make xpi` builds the translators and the package; `python3 tools/make-updates.py` adds it to `updates.json`
+(commit that), then attach exactly that `.xpi` to the GitHub release `vX.Y.Z`.

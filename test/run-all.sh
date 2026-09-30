@@ -5,8 +5,10 @@ cd "$(dirname "$0")/.." || exit 1
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 fail=0
+python3 test/check-manifest.py | grep -q '^manifest OK' && echo "manifest OK" || fail=1
 python3 build.py --check && echo "build OK (translators/ matches src/)" || fail=1
 out=$("$JSC" test/parse-jsc.js 2>&1); echo "$out" | tail -5; echo "$out" | grep -q '^parse OK' || fail=1
+out=$("$JSC" test/package-jsc.js 2>&1); echo "$out" | tail -3; echo "$out" | grep -q '^package OK' || fail=1
 if [ -x "$CHROME" ]; then
 	PORT=$((20000 + $$ % 20000))
 	python3 -m http.server $PORT --bind 127.0.0.1 >/dev/null 2>&1 & SRV=$!
