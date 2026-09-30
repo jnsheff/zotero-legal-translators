@@ -40,6 +40,14 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(w.T.detectWeb(await w.doc('westlaw-article.html'), D), 'journalArticle', 'WL article'); await w.T.doWeb(await w.doc('westlaw-article.html'), D);
   eq(pick(w.items[4], ['title', 'publicationTitle', 'journalAbbreviation', 'volume', 'pages', 'date']), { title: 'Code and Other Laws of Cyberspace', publicationTitle: 'Harvard Law Review', journalAbbreviation: 'Harv. L. Rev.', volume: '113', pages: '501', date: 'April 2000' }, 'WL article item');
   eq(w.items[4].creators.map(c => c.firstName + '|' + c.lastName), ['Lawrence|Lessig'], 'WL article author');
+  // statute with no usable citation line, and reached through a URL that is not /Document/
+  const NU = 'https://1.next.westlaw.com/Some/Other/Path.html';
+  const nc = (await w.doc('westlaw-statute.html')); nc.querySelector('#cite').remove(); nc.querySelector('#titleDesc').textContent = 'Title 47. Telecommunications';
+  eq(w.T.detectWeb(nc, NU), 'statute', 'WL statute without a cite line, unusual URL'); await w.T.doWeb(nc, NU);
+  eq(pick(w.items[w.items.length - 1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '47', section: '230' }, 'WL U.S.C. from code set and title');
+  const ns = (await w.doc('westlaw-statute-state.html')); ns.querySelector('#cite').remove();
+  await w.T.doWeb(ns, NU); const ni = w.items[w.items.length - 1];
+  eq(pick(ni, ['code', 'section', 'nameOfAct']), { code: 'N.Y. Civ. Rights Law', section: '50-f', nameOfAct: 'Right of publicity' }, 'WL state statute from code set and title');
   eq(w.T.detectWeb(await w.doc('other.html'), D), false, 'WL other document page');
   eq(w.T.detectWeb(await w.doc('other.html'), 'https://1.next.westlaw.com/Home.html'), false, 'WL home');
   const L = 'https://1.next.westlaw.com/Search/Results.html?query=x';

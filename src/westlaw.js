@@ -36,13 +36,20 @@ function readPage(doc) {
 // Westlaw statute header: cite "NY CIV RTS § 50-f" / "47 U.S.C.A. § 230", title "§ 50-f. Right of publicity"
 function statuteFromHeader(page) {
 	var cite = page.cite, t = /^\u00a7+\s*([\w.()\-\u2013]+?)\.?\s+(.+)$/.exec(page.title);
-	if (!/\u00a7/.test(cite)) return null;
 	var m = /^(\d+)\s+(U\.?S\.?C\.?(?:A|S)?\.?|C\.?F\.?R\.?)\s+\u00a7+\s*(\S+)/i.exec(cite), out;
 	if (m) {
 		out = { kind: 'statute', codeNumber: m[1], code: normCode(m[2]), section: m[3].replace(/[.,]$/, '') };
 	}
 	else if ((m = /^([A-Z]{2})\s+.+?\s+\u00a7+\s*(\S+)$/.exec(cite)) && STATE_CODES[m[1]]) {
 		out = { kind: 'statute', codeNumber: '', code: page.titleDesc ? stateCodeName(STATE_CODES[m[1]], page.titleDesc) : cite.replace(/\s*\u00a7.*$/, ''), section: m[2] };
+	}
+	else if (t && page.codeSet) {
+		// no usable citation line: build the code from the code set and the title description
+		var tn = /Title (\d+)/i.exec(page.titleDesc), sn = /\bof (.+?)(?: Annotated)?$/.exec(page.codeSet.replace(/[,.]+$/, ''));
+		if (/United States Code/i.test(page.codeSet) && tn) out = { kind: 'statute', codeNumber: tn[1], code: 'U.S.C.', section: t[1] };
+		else if (/Code of Federal Regulations/i.test(page.codeSet) && tn) out = { kind: 'statute', codeNumber: tn[1], code: 'C.F.R.', section: t[1] };
+		else if (sn && STATES[sn[1]]) out = { kind: 'statute', codeNumber: '', code: stateCodeName(sn[1], page.titleDesc || 'Code'), section: t[1] };
+		else return null;
 	}
 	else return null;
 	if (t) out.rest = t[2];
@@ -72,8 +79,8 @@ function classifyWestlaw(page) {
 }
 
 function detectWeb(doc, url) {
-	if (isListURL(url) && !isDocumentURL(url) && getSearchResults(doc, true)) return 'multiple';
-	if (!isDocumentURL(url)) return false;
+	if (isListURL(url) && !isDocumentURL(url) && !doc.querySelector('#co_docHeaderCitation') && getSearchResults(doc, true)) return 'multiple';
+	if (!isDocumentURL(url) && !doc.querySelector('#co_docHeaderCitation')) return false;
 	var c = classifyWestlaw(readPage(doc));
 	return c ? TYPE_OF[c.parsed.kind] : false;
 }
