@@ -57,11 +57,27 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
   Institute as Author and Publisher, the Date (the year), a draft's name in Edition ("Tentative Draft No. 2"), and the section with its
   heading in a note. Lexis+ titles such as `Restat 2d of Torts, § 552A` are normalized, and the year comes from the closing
   "Copyright (c) 1977, The American Law Institute" line. Without citation-phoenix the marker in Extra is inert.
-* **Journal-article authors** on Lexis are read from the "Author:" line, including joint authors; Lexis category
-  prefixes ("ARTICLE:", "RESPONSE:") are dropped from titles.
+* **Journal-article authors** on Lexis are read from the "Author:" line, including joint authors separated by commas and footnote marks
+  ("A,* B,** & C***"); Westlaw's "A , B , C" is split too. Lexis category prefixes ("ARTICLE:", "RESPONSE:") are dropped from titles.
+* **Regulations** (C.F.R., Federal Register, state codes such as NYCRR) are statutes with that code. The title is the section heading (Lexis: the
+  `h2.SS_Banner`). `dateEnacted` is an effective date, never "current through": Westlaw's `#effectiveDate` (the last date of a range); on Lexis
+  the latest of the Federal Register notices in History, the dates in an Effective Date Note, and a state History line's "effective 06/01/26".
+  With none, it is left blank. A Westlaw Federal Register document ("86 FR 61402") is a statute with code `Fed. Reg.`, volume and page.
+  Westlaw federal-code items (U.S.C., C.F.R., NYCRR, Stat., Fed. Reg.) get a find link, as cases do.
+* **Codified statutes**: Westlaw state codes that are one general compilation are named from a table (`GENERAL_CODES`: "N.C. Gen. Stat.",
+  "Mass. Gen. Laws" with the chapter in Code Number); a code named by subject keeps the subject ("N.Y. Civ. Rights Law"). Lexis "NY CLS" codes are
+  named from the page heading. A Lexis statute's date is the latest effective date in its History, else the latest date there.
+* **Session laws** (Westlaw "Historical Session Laws", Lexis acts) are statutes with code `Stat.`, volume in Code Number, first page in Section,
+  Public Law Number and Session; hicite exports them as `statsess`.
+* **Lexis treatises**: a title with a section sign ("2 Nimmer on Copyright § 8.02") is a treatise, not a code, when the Info pane says "Find
+  references to this treatise". The authors, publisher and date come from the Source Information dialog, which the translator opens by clicking
+  the link under "Source Information" (it is read directly if the page was saved with it open); without it the publisher and year come from the
+  closing "Copyright 2026, Matthew Bender & Company, Inc." line and there is no author. The click has not been tried on a live page.
+* **Dates** are written with the month spelled out ("October 1, 2026").
 
-Not handled: Lexis session laws and acts without a section number, secondary sources other than law-review
-articles, treatises and restatements, dockets and filings. (Restatements are saved from document pages, not from search results.)
+Not handled: dockets and filings, secondary sources other than law-review articles, treatises and restatements, Lexis and Westlaw pages
+for states whose code needs a title number (Delaware, Illinois, Louisiana, Maine, Maryland, Oklahoma, Pennsylvania, Vermont).
+(Restatements are saved from document pages, not from search results.)
 
 ### Cornell LII
 
