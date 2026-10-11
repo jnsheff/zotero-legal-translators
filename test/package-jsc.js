@@ -19,13 +19,13 @@ var src = read('addon/bootstrap.js');
 var B = new Function('Zotero', 'IOUtils', 'PathUtils', 'fetch', src + '; return { startup: startup, uninstall: uninstall, list: TRANSLATORS };')(Zotero, IOUtils, PathUtils, null);
 
 // the list is exactly the translators build.py produces
-var built = ['Westlaw (legal).js', 'Lexis+ (legal).js', 'Cornell LII (legal).js'];
+var built = ['Westlaw (legal).js', 'Lexis+ (legal).js', 'Cornell LII (legal).js', 'Federal Register (legal).js'];
 eq(B.list, built, 'installer lists the built translators');
 var manifest = JSON.parse(read('addon/manifest.json'));
 eq(manifest.applications.zotero.id, 'zotero-legal-translators@zotero.local', 'plugin id');
 
 B.startup({ rootURI: 'jar:file:///x.xpi!/' }).then(function () {
-	eq(Object.keys(files).sort(), built.map(function (n) { return '/tz/' + n; }).sort(), 'three files installed');
+	eq(Object.keys(files).sort(), built.map(function (n) { return '/tz/' + n; }).sort(), 'every translator installed');
 	built.forEach(function (n) { eq(files['/tz/' + n] === read('translators/' + n), true, n + ' installed unchanged'); });
 	eq(reinits, 1, 'translators reloaded once after installing');
 	return B.startup({ rootURI: 'jar:file:///x.xpi!/' });
@@ -38,7 +38,7 @@ B.startup({ rootURI: 'jar:file:///x.xpi!/' }).then(function () {
 	eq(files['/tz/Westlaw (legal).js'] === read('translators/Westlaw (legal).js'), true, 'outdated file replaced');
 	return Promise.all([B.uninstall({}, 7), B.uninstall({}, 8)]);
 }).then(function () {
-	eq(Object.keys(files).length, 3, 'upgrade / downgrade keep the translators');
+	eq(Object.keys(files).length, built.length, 'upgrade / downgrade keep the translators');
 	return B.uninstall({}, 6);
 }).then(function () {
 	eq(Object.keys(files).length, 0, 'real uninstall removes them');

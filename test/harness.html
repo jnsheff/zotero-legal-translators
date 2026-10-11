@@ -119,6 +119,20 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq([x.picks, x.items.length], [[2], 4], 'LX multiple: both selected and scraped');
   await w.T.doWeb(await w.doc('westlaw-list.html'), L).catch(e => errors.push('WL list scrape: ' + e.message));
   eq(w.picks, [2], 'WL list: duplicates and snippet links collapsed');
+  // Federal Register
+  {
+    const FR = await load('translators/Federal Register (legal).js'), U = 'https://www.federalregister.gov/documents/2025/08/22/2025-16129/standards-of-conduct-revocation-of-superseded-regulations-revision-of-residual-provisions';
+    const d = await FR.doc('federalregister-rule.html');
+    eq(FR.T.detectWeb(d, U), 'statute', 'Federal Register rule detect'); await FR.T.doWeb(d, U);
+    const a = FR.items[0];
+    eq(pick(a, ['itemType', 'nameOfAct', 'code', 'codeNumber', 'section', 'pages', 'dateEnacted', 'url', 'extra']),
+      { itemType: 'statute', nameOfAct: 'Standards of Conduct; Revocation of Superseded Regulations; Revision of Residual Provisions', code: 'Fed. Reg.', codeNumber: '90', section: '40975', pages: '40975-40985', dateEnacted: 'August 22, 2025', url: U,
+        extra: 'mlzsync1:{"xtype":"regulation"}\nDocument Type: Rule\nAgency: Department of Health and Human Services; Office of the Secretary\nCFR: 45 CFR 73\nEffective Date: October 21, 2025\nDocument Number: 2025-16129\nRIN: 0991-AC40\nDocket ID: HHS-OS-2025-0001' }, 'Federal Register rule item');
+    eq(a.attachments, [{ title: 'Snapshot', mimeType: 'application/pdf', url: 'https://www.govinfo.gov/content/pkg/FR-2025-08-22/pdf/2025-16129.pdf' }], 'the PDF of the printed version is the snapshot');
+    eq(a.abstractNote.indexOf('The Department of Health and Human Services (Department or HHS) is revising') === 0, true, 'the summary is the abstract');
+    eq(FR.T.detectWeb(d, 'https://www.federalregister.gov/documents/search?q=x'), false, 'a search page is not a document');
+    eq(FR.T.detectWeb(await FR.doc('other.html'), U), false, 'a page without document details is not a document');
+  }
   // Cornell LII
   { const L = await load(LI), B = 'https://www.law.cornell.edu';
     const S = (n, p, want, m) => (async () => {
@@ -167,6 +181,18 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
         const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); await RX.T.doWeb(rd, u); const t = RX.items.pop();
         eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'extra', 'publisher', 'date']), { itemType: 'bookSection', title: 'The Reproduction Right', bookTitle: 'Nimmer on Copyright', volume: '2', extra: 'Section: 8.02', publisher: 'Matthew Bender & Company, Inc.', date: 'August 2026' }, 'real Lexis treatise with the source information open');
         eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:Melville B.|Nimmer', 'bookAuthor:David|Nimmer'], 'real Lexis treatise: authors from the source information');
+      }
+    }
+    { // the page as saved from the browser
+      const r = await fetch('../test pages/' + encodeURIComponent('Federal Register __ Standards of Conduct; Revocation of Superseded Regulations; Revision of Residual Provisions.html'), { cache: 'no-store' });
+      if (r.ok) {
+        const FR = await load('translators/Federal Register (legal).js'), U = 'https://www.federalregister.gov/documents/2025/08/22/2025-16129/standards-of-conduct-revocation-of-superseded-regulations-revision-of-residual-provisions';
+        const rd = new DOMParser().parseFromString(await r.text(), 'text/html');
+        eq(FR.T.detectWeb(rd, U), 'statute', 'real Federal Register page detect'); await FR.T.doWeb(rd, U); const a = FR.items[0];
+        eq(pick(a, ['itemType', 'nameOfAct', 'code', 'codeNumber', 'section', 'pages', 'dateEnacted', 'url']), { itemType: 'statute', nameOfAct: 'Standards of Conduct; Revocation of Superseded Regulations; Revision of Residual Provisions', code: 'Fed. Reg.', codeNumber: '90', section: '40975', pages: '40975-40985', dateEnacted: 'August 22, 2025', url: U }, 'real Federal Register page item');
+        eq(a.extra.split('\n')[0], 'mlzsync1:{"xtype":"regulation"}', 'real Federal Register page: marked as citation-phoenix\'s regulation type');
+        eq(a.attachments.map(x => x.url), ['https://www.govinfo.gov/content/pkg/FR-2025-08-22/pdf/2025-16129.pdf'], 'real Federal Register page: the PDF is the snapshot');
+        eq(a.abstractNote.length > 1000, true, 'real Federal Register page: the whole summary');
       }
     }
     for (const [file, want, label] of [

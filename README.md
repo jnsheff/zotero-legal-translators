@@ -1,12 +1,13 @@
 # Zotero translators for Westlaw and Lexis+
 
-Two Zotero web translators (for the Zotero Connector) that save legal sources from Westlaw and Lexis+:
+Zotero web translators (for the Zotero Connector) that save legal sources from Westlaw and Lexis+ (and two free sites):
 
 | Translator | Sites | Saves |
 |---|---|---|
 | `Westlaw (legal).js` | `*.westlaw.com` (Westlaw Edge / Precision) | cases, statutes and regulations, law-review articles; search-result lists |
 | `Cornell LII (legal).js` | `law.cornell.edu` | the primary sources: U.S. Code, CFR, Supreme Court opinions, the Constitution, the federal rules, the UCC and state regulations |
 | `Lexis+ (legal).js` | `plus.lexis.com`, `advance.lexis.com` | the same |
+| `Federal Register (legal).js` | `www.federalregister.gov` | rules, proposed rules, notices and presidential documents, as statutes filed under `Fed. Reg.` |
 
 Cases fill Case Name, Reporter, Volume, First Page, Court, Date Decided, Docket Number (`WL` and `U.S. Dist. LEXIS`
 cites are handled: volume = year, page = document number). Statutes fill Code, Code Number, Section, Name of Act and
@@ -78,6 +79,16 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
 Not handled: dockets and filings, secondary sources other than law-review articles, treatises and restatements, Lexis and Westlaw pages
 for states whose code needs a title number (Delaware, Illinois, Louisiana, Maine, Maryland, Oklahoma, Pennsylvania, Vermont).
 (Restatements are saved from document pages, not from search results.)
+
+### Federal Register
+
+A document page (`/documents/YYYY/MM/DD/<number>/<slug>`) becomes a Statute marked as citation-phoenix's *regulation* type (`mlzsync1:{"xtype":"regulation"}` on the first line of Extra; citation-phoenix reads it as the regulation type, and without the add-on it is an ordinary Statute) and filed under `Fed. Reg.`, as the Westlaw translator saves a Federal Register document: Name of Act = the
+title, Code Number = the volume and Section = the first page (from "90 FR 40975"), Pages = "40975-40985", Date Enacted = the publication date (the date a
+Bluebook cite gives), Abstract = the summary, URL = the canonical address. The Document Details and Dates boxes follow in Extra, one `Label: value` per line:
+Document Type, Agency, CFR, Effective Date (also Comments Close / Open), Document Number, RIN and the Docket ID (from the regulations.gov box). The PDF of the
+printed version (the "View printed version (PDF)" link, on govinfo.gov) is the attachment, titled "Snapshot"; a page without one saves the page itself.
+hicite exports the item as a government document (`90 Fed. Reg. 40975 (Aug. 22, 2025)`). Search-result pages are not handled. The fixture
+`fixtures/federalregister-rule.html` is trimmed from the page for 2025-16129; the site refuses scripted downloads, so the page has to be saved from a browser.
 
 ### Cornell LII
 
