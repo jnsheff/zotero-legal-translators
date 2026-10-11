@@ -38,11 +38,30 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
 * **Treatises** (Westlaw and Lexis+) become Book Sections: Title = section title, Book Title = the treatise,
   Volume, and the section number in Extra as `Section: 18:2` (Zotero has no section field for book sections); Westlaw also gives
   Edition, Date (the update month) and the treatise author as Book Author.
+* **Case jurisdiction and filing date** (all three translators) go into citation-phoenix's Extra block, `mlzsync1:{"extrafields":{...}}`,
+  where its code and styles read them: `jurisdiction` as a key with its names ("005us:c2United States|US|Second Circuit") and `filingDate`
+  (citation-phoenix's styles read it as the "submitted" date; as a plain field it would only be a stray `filingDate:` line in Extra). The
+  jurisdiction follows citation-phoenix's court mapper rule for rule (`src/shared.js`, `jurisPhoenixFederal` and `jurisPhoenixState`) with
+  one repair (a state is found longest name first, so West Virginia is not Virginia) and these additions for what it misses: Lexis's
+  "for the" wording, Bluebook "2d Cir." / "3d Cir.", district and bankruptcy courts ("S.D.N.Y.", "United States District Court for the
+  Eastern District of Texas"), and state-court abbreviations ("Tex.", "N.Y. App. Div."). A court it cannot place leaves no jurisdiction
+  (citation-phoenix then fills in `us`). The Court field stays the Bluebook abbreviation.
+* **Westlaw cases** also save the passages you highlighted on Westlaw as a note tagged `note` (each as `<blockquote>text [page]</blockquote>`,
+  the page being the star page where the highlight starts; "**" parallel pagination is skipped), and the URL is a link that finds the case
+  by its citation (`…Results.html?query=find:499 U.S. 340#autoLogin`, as citation-phoenix does), which works for anyone with Westlaw
+  access; a case with no reporter citation keeps its document address.
+* **Restatements** (Westlaw and Lexis+) become Books marked as citation-phoenix's *restatement* type (`mlzsync1:{"xtype":"restatement"}`
+  in Extra), so the hicite exporter writes them as model codes ("Restatement (Second) of Torts § 402A (Am. L. Inst. 1965)"). The item is the
+  work, not the section: Title without the section ("Restatement (Second) of Torts"; Westlaw's full title, "Restatement (Third) of Torts:
+  Liability for Physical and Emotional Harm", is read from the breadcrumb because its citation line abbreviates it), the American Law
+  Institute as Author and Publisher, the Date (the year), a draft's name in Edition ("Tentative Draft No. 2"), and the section with its
+  heading in a note. Lexis+ titles such as `Restat 2d of Torts, § 552A` are normalized, and the year comes from the closing
+  "Copyright (c) 1977, The American Law Institute" line. Without citation-phoenix the marker in Extra is inert.
 * **Journal-article authors** on Lexis are read from the "Author:" line, including joint authors; Lexis category
   prefixes ("ARTICLE:", "RESPONSE:") are dropped from titles.
 
 Not handled: Lexis session laws and acts without a section number, secondary sources other than law-review
-articles, dockets and filings.
+articles, treatises and restatements, dockets and filings. (Restatements are saved from document pages, not from search results.)
 
 ### Cornell LII
 

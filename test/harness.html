@@ -32,9 +32,18 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(w.T.detectWeb(await w.doc('westlaw-case.html'), D), 'case', 'WL case detect');
   await w.T.doWeb(await w.doc('westlaw-case.html'), D);
   eq(pick(w.items[0], ['itemType', 'caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'libraryCatalog']),
-    { itemType: 'case', caseName: 'Feist Publications, Inc. v. Rural Telephone Service Co., Inc.', reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html', libraryCatalog: 'Westlaw' }, 'WL case item');
+    { itemType: 'case', caseName: 'Feist Publications, Inc. v. Rural Telephone Service Co., Inc.', reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: 'https://1.next.westlaw.com/Search/Results.html?query=find:499%20U.S.%20340#autoLogin', libraryCatalog: 'Westlaw' }, 'WL case item');
   await w.T.doWeb(await w.doc('westlaw-case-notitle.html'), D);
   eq(pick(w.items[1], ['reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber']), { reporter: 'WL', reporterVolume: '2025', firstPage: '458520', court: 'D. Del.', dateDecided: 'February 11, 2025', docketNumber: 'Civil Action No. 1:20-cv-613-SB' }, 'WL unpublished, header only');
+  { const ex = x => JSON.parse(x.replace(/^mlzsync1:/, '')).extrafields;
+    eq(ex(w.items[0].extra), { jurisdiction: '002usUnited States|US', filingDate: 'March 27, 1991' }, 'WL case: jurisdiction and filing date in the Extra block (U.S. Supreme Court)');
+    eq(ex(w.items[1].extra), { jurisdiction: '010us:c3:de.dUnited States|US|Third Circuit|D. Delaware', filingDate: 'February 11, 2025' }, 'WL case: jurisdiction from the court as the page prints it (D. Del.)');
+    eq(w.items[1].url, 'https://1.next.westlaw.com/Search/Results.html?query=find:2025%20WL%20458520#autoLogin', 'WL case: a WL cite is findable too');
+    eq(w.items[0].notes.length, 0, 'WL case with no highlights has no note'); }
+  await w.T.doWeb(await w.doc('westlaw-case-highlights.html'), D);
+  { const h = w.items.pop();
+    eq(h.notes.map(n => n.note), ['<p><blockquote>Copyright protection subsists in original works [*340]</blockquote></p><p><blockquote>sweat of the brow [*345]</blockquote></p><p><blockquote>modicum of creativity [*346]</blockquote></p>'], 'WL highlights note: spans joined by annotation, the page where each starts, "**" parallel pages skipped, and the last page not "undefined"');
+    eq(h.notes[0].tags, ['note'], 'WL highlights note tag'); }
   eq(w.T.detectWeb(await w.doc('westlaw-statute.html'), 'https://1.next.westlaw.com/Document/N2A5B4C6D7E8F9A0B1C2D3E4F5A6B7C8D/View/FullText.html?x=1'), 'statute', 'WL statute (N... document id)'); await w.T.doWeb(await w.doc('westlaw-statute.html'), D);
   eq(pick(w.items[2], ['code', 'codeNumber', 'section', 'nameOfAct']), { code: 'U.S.C.', codeNumber: '47', section: '230', nameOfAct: 'Protection for private blocking and screening of offensive material' }, 'WL federal statute item');
   await w.T.doWeb(await w.doc('westlaw-statute-state.html'), D);
@@ -45,7 +54,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   const RU = 'https://1.next.westlaw.com/Document/N2DC564D01A1611E29721A053D49F2B3B/View/FullText.html?navigationPath=Search%2Fv1&listSource=Search&list=MULTIPLECITATIONS&originationContext=NonUniqueFindSelected&transitionType=UniqueDocItem&contextData=%28sc.Search%29';
   eq(w.T.detectWeb(await w.doc('westlaw-statute-usca.html'), RU), 'statute', 'WL 15 USCA § 1125 (address from a real page)');
   await w.T.doWeb(await w.doc('westlaw-statute-usca.html'), RU);
-  eq(pick(w.items[w.items.length - 1], ['code', 'codeNumber', 'section', 'nameOfAct', 'url']), { code: 'U.S.C.', codeNumber: '15', section: '1125', nameOfAct: 'False designations of origin, false descriptions, and dilution forbidden', url: 'https://1.next.westlaw.com/Document/N2DC564D01A1611E29721A053D49F2B3B/View/FullText.html' }, 'WL 15 USCA item');
+  eq(pick(w.items[w.items.length - 1], ['code', 'codeNumber', 'section', 'nameOfAct', 'url']), { code: 'U.S.C.', codeNumber: '15', section: '1125', nameOfAct: 'False designations of origin, false descriptions, and dilution forbidden', url: 'https://1.next.westlaw.com/Search/Results.html?query=find:15%20U.S.C.%201125#autoLogin' }, 'WL 15 USCA item (a find link, as for cases)');
   const RG = 'https://1.next.westlaw.com/Document/NDE5168613A9411EB9BAAAE2499FFFA5E/View/FullText.html?listSource=Search';
   eq(w.T.detectWeb(await w.doc('westlaw-regulation.html'), RG), 'statute', 'WL regulation detect'); await w.T.doWeb(await w.doc('westlaw-regulation.html'), RG);
   eq(pick(w.items[w.items.length - 1], ['itemType', 'code', 'codeNumber', 'section', 'nameOfAct']), { itemType: 'statute', code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review' }, 'WL regulation item');
@@ -61,6 +70,14 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   { const t = w.items[w.items.length - 1];
     eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'extra', 'edition', 'date']), { itemType: 'bookSection', title: 'Anti-assignment-in-gross rule', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '2', extra: 'Section: 18:2', edition: '5', date: 'September 2026' }, 'WL treatise item');
     eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:J. Thomas|McCarthy'], 'WL treatise author'); }
+  eq(w.T.detectWeb(await w.doc('westlaw-restatement.html'), D), 'book', 'WL restatement'); await w.T.doWeb(await w.doc('westlaw-restatement.html'), D);
+  { const r = w.items.pop();
+    eq(pick(r, ['itemType', 'title', 'date', 'publisher', 'edition', 'extra', 'libraryCatalog']), { itemType: 'book', title: 'Restatement (Third) of Torts: Liability for Physical and Emotional Harm', date: '2010', publisher: 'American Law Institute', edition: undefined, extra: 'mlzsync1:{"xtype":"restatement"}', libraryCatalog: 'Westlaw' }, 'WL restatement item (full title from the breadcrumb)');
+    eq(r.creators.map(c => c.creatorType + ':' + c.lastName), ['author:American Law Institute'], 'WL restatement author');
+    eq(r.notes.map(n => n.note), ['Section: \u00a7 34 Intervening Acts and Superseding Causes'], 'WL restatement section note, with its heading');
+    eq(r.attachments.map(a => a.title), ['Snapshot'], 'WL restatement snapshot'); }
+  eq(w.T.detectWeb(await w.doc('westlaw-restatement-draft.html'), D), 'book', 'WL restatement draft'); await w.T.doWeb(await w.doc('westlaw-restatement-draft.html'), D);
+  { const r = w.items.pop(); eq(pick(r, ['title', 'date', 'edition']), { title: 'Restatement of the Law, Copyright', date: '2021', edition: 'Tentative Draft No. 2' }, 'WL restatement draft: the draft name is the edition'); }
   eq(w.T.detectWeb(await w.doc('other.html'), D), false, 'WL other document page');
   eq(w.T.detectWeb(await w.doc('other.html'), 'https://1.next.westlaw.com/Home.html'), false, 'WL home');
   const L = 'https://1.next.westlaw.com/Search/Results.html?query=x';
@@ -72,6 +89,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(x.T.detectWeb(await x.doc('lexis-case.html'), LU), 'case', 'LX case'); await x.T.doWeb(await x.doc('lexis-case.html'), LU);
   eq(pick(x.items[0], ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'libraryCatalog']),
     { caseName: "Feist Publ'ns, Inc. v. Rural Tel. Serv. Co.", reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: undefined, libraryCatalog: 'Lexis+' }, 'LX case item');
+  eq(JSON.parse(x.items[0].extra.replace(/^mlzsync1:/, '')).extrafields, { jurisdiction: '002usUnited States|US', filingDate: 'March 27, 1991' }, 'LX case: jurisdiction and filing date in the Extra block');
   eq(x.T.detectWeb(await x.doc('lexis-statute.html'), LU), 'statute', 'LX statute'); await x.T.doWeb(await x.doc('lexis-statute.html'), LU);
   eq(pick(x.items[1], ['code', 'codeNumber', 'section']), { code: 'U.S.C.', codeNumber: '47', section: '230' }, 'LX statute item');
   { const d = await x.doc('lexis-case.html'); const before = x.Z.calls; x.T.detectWeb(d, LU); x.T.detectWeb(d, LU); x.T.detectWeb(d, LU);
@@ -89,6 +107,12 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   eq(pick(x.items[x.items.length - 1], ['itemType', 'title', 'bookTitle', 'volume', 'extra']), { itemType: 'bookSection', title: 'Refusal on Basis of Likelihood of Confusion, Mistake, or Deception', bookTitle: 'Gilson on Trademarks', volume: '8', extra: 'Section: 1207' }, 'LX treatise item');
   await x.T.doWeb(await x.doc('lexis-joint.html'), LU);
   eq(x.items[x.items.length - 1].creators.map(c => c.firstName + '|' + c.lastName), ['Jeanne C.|Fromer', 'Mark P.|McKenna'], 'LX joint authors');
+  eq(x.T.detectWeb(await x.doc('lexis-restatement.html'), LU), 'book', 'LX restatement (not a statute, though the title has a section sign)'); await x.T.doWeb(await x.doc('lexis-restatement.html'), LU);
+  { const r = x.items.pop();
+    eq(pick(r, ['itemType', 'title', 'date', 'publisher', 'extra', 'libraryCatalog']), { itemType: 'book', title: 'Restatement (Second) of Torts', date: '1977', publisher: 'American Law Institute', extra: 'mlzsync1:{"xtype":"restatement"}', libraryCatalog: 'Lexis+' }, 'LX restatement item (year from the closing copyright line)');
+    eq(r.creators.map(c => c.creatorType + ':' + c.lastName), ['author:American Law Institute'], 'LX restatement author');
+    eq(r.notes.map(n => n.note), ['Section: \u00a7 552A Contributory Negligence'], 'LX restatement section note, with its heading');
+    eq(r.attachments.map(a => a.title), ['Snapshot'], 'LX restatement snapshot'); }
   x.items.splice(2, 5); // keep the count below
   eq(x.T.detectWeb(await x.doc('lexis-results.html'), LU), 'multiple', 'LX results');
   await x.T.doWeb(await x.doc('lexis-results.html'), LU);
@@ -125,6 +149,70 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
         ['Ford Motor Co. v. Montana Eighth Judicial District Court', 'Ford Motor Co. v. Montana Eighth Judicial District Court'], ['NATIONAL FEDERATION OF INDEPENDENT BUSINESS v. SEBELIUS', 'National Federation of Independent Business v. Sebelius']])
       eq(L.T.caseName(a), b, 'case name ' + a);
   }
+  // Real saved regulation pages (test pages/, kept out of git); each is skipped when absent
+  {
+    const RW = await load(WL), RX = await load(LX), RG = 'https://1.next.westlaw.com/Document/NDE5168613A9411EB9BAAAE2499FFFA5E/View/FullText.html?listSource=Search', u = 'https://plus.lexis.com/document/?pdmfid=1&crid=x';
+    const r0 = await fetch('../test pages/' + encodeURIComponent('§ 42.108 Institution of inter partes review. _ Regulations _ United States _ Westlaw Advantage.html'), { cache: 'no-store' });
+    if (r0.ok) { await RW.T.doWeb(new DOMParser().parseFromString(await r0.text(), 'text/html'), RG); eq(pick(RW.items.pop(), ['dateEnacted', 'url']), { dateEnacted: 'January 8, 2021', url: 'https://1.next.westlaw.com/Search/Results.html?query=find:37%20C.F.R.%2042.108#autoLogin' }, 'real regulation: effective date, find link'); }
+    for (const [file, want, label] of [
+      ['§ 73.735–101 Purpose. _ Regulations _ United States _ Westlaw Advantage.html', { code: 'C.F.R.', codeNumber: '45', section: '73.735\u2013101', nameOfAct: 'Purpose', dateEnacted: 'October 20, 2025' }, 'real regulation with an en dash and a date range'],
+      ['COVID-19 Vaccination and Testing; Emergency Temporary Standard _ Pending_Proposed Regulations _ United States _ Westlaw Advantage.html', { code: 'Fed. Reg.', codeNumber: '86', section: '61402', nameOfAct: 'COVID-19 Vaccination and Testing; Emergency Temporary Standard', dateEnacted: 'November 5, 2021', url: 'https://1.next.westlaw.com/Search/Results.html?query=find:86%20FR%2061402#autoLogin' }, 'real Federal Register document'],
+      ['Section 100.3. A Judge Shall Perform the Duties of Judicial Office Impartially and Diligently _ Regulations _ New York _ Westlaw Advantage.html', { code: 'NYCRR', codeNumber: '22', section: '100.3', nameOfAct: 'A Judge Shall Perform the Duties of Judicial Office Impartially and Diligently', dateEnacted: 'June 1, 2026' }, 'real New York regulation']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RW.T.detectWeb(rd, RG), 'statute', label + ' detect'); await RW.T.doWeb(rd, RG); eq(pick(RW.items[RW.items.length - 1], Object.keys(want)), want, label); }
+    }
+    { // the Source Information dialog, as the page draws it after the link is clicked (saved with it open)
+      const r = await fetch('../test pages/' + encodeURIComponent('lexis treatise source info.html'), { cache: 'no-store' });
+      if (r.ok) {
+        const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); await RX.T.doWeb(rd, u); const t = RX.items.pop();
+        eq(pick(t, ['itemType', 'title', 'bookTitle', 'volume', 'extra', 'publisher', 'date']), { itemType: 'bookSection', title: 'The Reproduction Right', bookTitle: 'Nimmer on Copyright', volume: '2', extra: 'Section: 8.02', publisher: 'Matthew Bender & Company, Inc.', date: 'August 2026' }, 'real Lexis treatise with the source information open');
+        eq(t.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:Melville B.|Nimmer', 'bookAuthor:David|Nimmer'], 'real Lexis treatise: authors from the source information');
+      }
+    }
+    for (const [file, want, label] of [
+      ['lexis treatise.html', { itemType: 'bookSection', title: 'The Reproduction Right', bookTitle: 'Nimmer on Copyright', volume: '2', extra: 'Section: 8.02', publisher: 'Matthew Bender & Company, Inc.', date: '2026' }, 'real Lexis treatise (a section sign in the title, but "Find references to this treatise")']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'bookSection', label + ' detect'); await RX.T.doWeb(rd, u); eq(pick(RX.items.pop(), Object.keys(want)), want, label); }
+    }
+    for (const [file, want, label] of [
+      ['§ 8_9. Defendant\'s copying of plaintiff\'s trade dress as evidence of a secondary meaning _ Secondary Sources _ National _ Westlaw Advantage.html', { itemType: 'bookSection', title: 'Defendant\'s copying of plaintiff\'s trade dress as evidence of a secondary meaning', bookTitle: 'McCarthy on Trademarks and Unfair Competition', volume: '1', extra: 'Section: 8:9', edition: '5', date: 'September 2026' }, 'real Westlaw treatise']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RW.T.detectWeb(rd, RG), 'bookSection', label + ' detect'); await RW.T.doWeb(rd, RG); const a = RW.items.pop(); eq(pick(a, Object.keys(want)), want, label); eq(a.creators.map(c => c.creatorType + ':' + c.firstName + '|' + c.lastName), ['bookAuthor:J. Thomas|McCarthy'], label + ': author'); }
+    }
+    for (const [file, want, label] of [
+      ['lexis law review.html', { itemType: 'journalArticle', title: 'Intelligent Design', publicationTitle: 'Duke L.J.', volume: '68', pages: '75', date: 'October 2018' }, 'real Lexis article']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'journalArticle', label + ' detect'); await RX.T.doWeb(rd, u); const a = RX.items.pop(); eq(pick(a, Object.keys(want)), want, label); eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Christopher|Buccafusco', 'Mark A.|Lemley', 'Jonathan S.|Masur'], label + ': three authors'); }
+    }
+    for (const [file, want, label] of [
+      ['INTELLIGENT DESIGN _ Secondary Sources _ National _ Westlaw Advantage.html', { itemType: 'journalArticle', title: 'Intelligent Design', publicationTitle: 'Duke Law Journal', journalAbbreviation: 'Duke L.J.', volume: '68', pages: '75', date: 'October 2018' }, 'real Westlaw article']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RW.T.detectWeb(rd, RG), 'journalArticle', label + ' detect'); await RW.T.doWeb(rd, RG); const a = RW.items.pop(); eq(pick(a, Object.keys(want)), want, label); eq(a.creators.map(c => c.firstName + '|' + c.lastName), ['Christopher|Buccafusco', 'Mark A.|Lemley', 'Jonathan S.|Masur'], label + ': three authors'); }
+    }
+    for (const [file, want, label] of [
+      ['lexis usca.html', { code: 'U.S.C.', codeNumber: '35', section: '101', nameOfAct: 'Inventions patentable', dateEnacted: 'July 19, 1952' }, 'real Lexis U.S.C.S. page ("Part 1 of 2" dropped, title from the banner)'],
+      ['lexis pub l.html', { code: 'Stat.', codeNumber: '140', section: '1026', nameOfAct: 'Lindsey O. Graham Sanctioning Russia and Iran Act of 2026', publicLawNumber: '119-111', session: '119', dateEnacted: 'September 18, 2026' }, 'real Lexis session law'],
+      ['lexis state code.html', { code: 'N.Y. Civ. Rights Law', section: '50-f', nameOfAct: 'Right of publicity', dateEnacted: 'December 11, 2025' }, 'real Lexis state code (NY CLS Civ R named from the heading)']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'statute', label + ' detect'); await RX.T.doWeb(rd, u); eq(pick(RX.items.pop(), Object.keys(want)), want, label); }
+    }
+    for (const [file, want, label] of [
+      ['§ 101. Inventions patentable _ Statutes _ United States _ Westlaw Advantage.html', { code: 'U.S.C.', codeNumber: '35', section: '101', nameOfAct: 'Inventions patentable' }, 'real Westlaw U.S.C.A. page'],
+      ['§ 58-10-455. Taxation _ Statutes _ North Carolina _ Westlaw Advantage.html', { code: 'N.C. Gen. Stat.', codeNumber: '', section: '58-10-455', nameOfAct: 'Taxation', dateEnacted: 'July 1, 2013' }, 'real Westlaw North Carolina statute (general compilation, not "Chapter 58")'],
+      ['§ 21. Inapplicability of certain sections to cities _ Statutes _ Massachusetts _ Westlaw Advantage.html', { code: 'Mass. Gen. Laws', codeNumber: '78', section: '21' }, 'real Westlaw Massachusetts statute (the chapter from the cite)'],
+      ['§ 92. Bribes; judicial officer, juror, etc.; giving or offering; punishment _ Statutes _ California _ Westlaw Advantage.html', { code: 'Cal. Penal Code', section: '92' }, 'real Westlaw California code'],
+      ['§ 50-f. Right of publicity _ Statutes _ New York _ Westlaw Advantage.html', { code: 'N.Y. Civ. Rights Law', section: '50-f', dateEnacted: 'December 11, 2025' }, 'real Westlaw New York statute'],
+      ['LEAHY\u2013SMITH AMERICA INVENTS ACT _ Historical Session Laws _ United States _ Westlaw Advantage.html', { code: 'Stat.', codeNumber: '125', section: '284', nameOfAct: 'Leahy\u2013Smith America Invents Act', publicLawNumber: '112-29', session: '112', dateEnacted: 'September 16, 2011' }, 'real Westlaw session law']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RW.T.detectWeb(rd, RG), 'statute', label + ' detect'); await RW.T.doWeb(rd, RG); eq(pick(RW.items.pop(), Object.keys(want)), want, label); }
+    }
+    for (const [file, want, label] of [
+      ['lexis cfr page.html', { code: 'C.F.R.', codeNumber: '37', section: '42.108', nameOfAct: 'Institution of inter partes review', dateEnacted: 'January 8, 2021' }, 'real Lexis C.F.R. page (title from the banner; dated by the latest effective date in the Effective Date Note, not "current through")'],
+      ['lexis ny regulation.html', { code: 'NYCRR', codeNumber: '22', section: '100.3', nameOfAct: 'A judge shall perform the duties of judicial office impartially and diligently', dateEnacted: 'June 1, 2026' }, 'real Lexis New York regulation (latest "effective" date in its History line)']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'statute', label + ' detect'); await RX.T.doWeb(rd, u); eq(pick(RX.items.pop(), Object.keys(want)), want, label); }
+    }
+  }
   // Real saved Westlaw pages (kept out of git: test pages/); skipped when absent
   const RP = { article: 'MARKS, MORALS, AND MARKETS _ Secondary Sources _ National _ Westlaw Advantage', case: 'Fletcher v. Experian Information Solutions, Incorporated _ Cases _ Texas _ Westlaw Advantage', statute: '§ 50-f. Right of publicity _ Statutes _ New York _ Westlaw Advantage', list: 'Search Results _ ai hallucination _ Westlaw Advantage' };
   const rp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RP[k] + (k === 'article' ? '.htm' : '.html')), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };
@@ -133,7 +221,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     const RW = await load(WL), u = 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html?listSource=Search';
     eq(RW.T.detectWeb(rc, u), 'case', 'real case detect'); await RW.T.doWeb(rc, u);
     eq(pick(RW.items[0], ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url']),
-      { caseName: 'Fletcher v. Experian Information Solutions, Incorporated', reporter: 'F.4th', reporterVolume: '168', firstPage: '231', court: '5th Cir.', dateDecided: 'February 18, 2026', docketNumber: 'No. 25-20086', url: 'https://1.next.westlaw.com/Document/I92e66d600d2211f1b2dac9cbea775483/View/FullText.html' }, 'real case item');
+      { caseName: 'Fletcher v. Experian Information Solutions, Incorporated', reporter: 'F.4th', reporterVolume: '168', firstPage: '231', court: '5th Cir.', dateDecided: 'February 18, 2026', docketNumber: 'No. 25-20086', url: 'https://1.next.westlaw.com/Search/Results.html?query=find:168%20F.4th%20231#autoLogin' }, 'real case item');
     const rs = await rp('statute');
     eq(RW.T.detectWeb(rs, 'https://1.next.westlaw.com/Document/N3CE4D4E2D75F11F0AB4D95D7E6BE7963/View/FullText.html'), 'statute', 'real statute detect');
     await RW.T.doWeb(rs, 'https://1.next.westlaw.com/Document/N3CE4D4E2D75F11F0AB4D95D7E6BE7963/View/FullText.html');
@@ -212,6 +300,23 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     await RX.T.doWeb(ll, 'https://plus.lexis.com/search/?pdmfid=1'); real += '; Lexis statute, results (' + RX.picks[0] + ' results)';
     if (RX.picks[0] !== 10) errors.push('real Lexis results: only ' + RX.picks[0]);
   }
+  // Real saved restatement pages (kept out of git: test pages/); skipped when absent
+  { const rw = await fetch('../test pages/westlaw-restatement.html', { cache: 'no-store' });
+    if (rw.ok) {
+      const RW = await load(WL), rd = new DOMParser().parseFromString(await rw.text(), 'text/html'), ru = 'https://1.next.westlaw.com/Document/I0000000000000000000000000000000/View/FullText.html';
+      eq(RW.T.detectWeb(rd, ru), 'book', 'real Westlaw restatement detect'); await RW.T.doWeb(rd, ru);
+      eq(pick(RW.items[0], ['itemType', 'title', 'date', 'publisher', 'extra']), { itemType: 'book', title: 'Restatement (Third) of Torts: Liability for Physical and Emotional Harm', date: '2010', publisher: 'American Law Institute', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Westlaw restatement item');
+      eq(RW.items[0].notes.map(n => n.note), ['Section: \u00a7 34 Intervening Acts and Superseding Causes'], 'real Westlaw restatement section');
+      real += '; Westlaw restatement';
+    }
+    const rl = await fetch('../test pages/lexis-restatement.html', { cache: 'no-store' });
+    if (rl.ok) {
+      const RX = await load(LX), rd = new DOMParser().parseFromString(await rl.text(), 'text/html'), u = 'https://plus.lexis.com/document/?pdmfid=1&crid=x';
+      eq(RX.T.detectWeb(rd, u), 'book', 'real Lexis restatement detect'); await RX.T.doWeb(rd, u);
+      eq(pick(RX.items[0], ['itemType', 'title', 'date', 'publisher', 'extra']), { itemType: 'book', title: 'Restatement (Second) of Torts', date: '1977', publisher: 'American Law Institute', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Lexis restatement item');
+      eq(RX.items[0].notes.map(n => n.note), ['Section: \u00a7 552A Contributory Negligence'], 'real Lexis restatement section');
+      real += '; Lexis restatement';
+    } }
   { const all = [...w.items, ...x.items]; const bad = all.filter(i => !(i.attachments.length === 1 && i.attachments[0].title === 'Snapshot' && i.attachments[0].document && i.attachments[0].document.nodeType === 9));
     if (bad.length) errors.push('items without a snapshot of the page: ' + bad.length + ' of ' + all.length); }
   document.getElementById('out').textContent = errors.length ? 'HARNESS FAILED\n' + errors.join('\n') : 'HARNESS OK (' + real + '; ' + w.items.length + ' + ' + x.items.length + ' items)';
