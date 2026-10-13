@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-10-13 18:19:22"
+	"lastUpdated": "2026-10-13 18:28:33"
 }
 
 /*
@@ -406,6 +406,9 @@ function findCopyrightYear(text) {
 	return m ? m[1] : '';
 }
 
+// The Model Penal Code pages give no year of the text; the Bluebook's example cites it "(Am. L. Inst. 1985)" (the Official Draft and Revised Comments)
+var MODEL_PENAL_CODE_YEAR = '1985';
+
 // Marks the item as citation-phoenix's "restatement" type; hicite exports it as a model code
 var RESTATEMENT_EXTRA = 'mlzsync1:{"xtype":"restatement"}';
 
@@ -429,7 +432,7 @@ function buildItem(parsed, extra) {
 		item.title = parsed.title;
 		item.creators.push({ lastName: 'American Law Institute', creatorType: 'author', fieldMode: 1 });
 		item.publisher = 'American Law Institute';
-		if (parsed.year) item.date = parsed.year;
+		item.date = parsed.year || (/^Model Penal Code\b/i.test(parsed.title) ? MODEL_PENAL_CODE_YEAR : '');
 		if (parsed.edition) item.edition = parsed.edition; // a draft's name: "Tentative Draft No. 2"
 		item.extra = RESTATEMENT_EXTRA;
 		if (parsed.section) item.notes.push({ note: 'Section: ' + parsed.section });
@@ -698,7 +701,7 @@ function readPage(doc) {
 		info: info.join('\n'),
 		body: bodyAfter(doc, title),
 		banner: firstText(doc, ['h2.SS_Banner']),
-		copyright: isRestatement(title) ? findCopyrightYear(spacedText(doc.querySelector('#document-content, .document-wrapper, main') || doc.body)) : '', // the year is on the last line of the document
+		copyright: isRestatement(title) && !/^Model Penal Code/i.test(title) ? findCopyrightYear(spacedText(doc.querySelector('#document-content, .document-wrapper, main') || doc.body)) : '', // the year is on the last line of the document
 		effectiveNote: (/EFFECTIVE DATE NOTE:(.*?)(?:\]|$)/.exec(spacedText(doc.querySelector('#document-content, .document-wrapper, main') || doc.body)) || [])[1] || '', // C.F.R.: "... effective Jan. 8, 2021."
 		history: historyText(doc),
 		refersTo: (/Find references to this ([a-z]+)/.exec(doc.body ? doc.body.textContent : '') || [])[1] || '', // the Info pane: "Find references to this treatise"
@@ -739,7 +742,7 @@ function watchForChanges(doc) {
 }
 
 // Restatement section: h1 and <title> "Restat 2d of Torts, \u00a7 552A", banner (h2.SS_Banner) "\u00a7 552A Contributory Negligence";
-// the last line of the document says "Copyright (c) 1977, The American Law Institute"
+// the last line of the document says "Copyright (c) 1977, The American Law Institute" (the Model Penal Code's says "Copyright2026, American Law Institute": the year of the page, not of the text)
 function restatementFromPage(page) {
 	if (!isRestatement(page.title)) return null;
 	var p = parseRestatement(page.title);
@@ -834,9 +837,11 @@ async function doWeb(doc, url) {
 // A treatise's authors, publisher and currency are in the Info pane's "Source Information" dialog (#sourceInfoContent), which the page
 // draws when the link under "Source Information" is clicked: "Publisher: Matthew Bender & Company, Inc.", "Coverage: Through August 2026;
 // Release No. 126", "Description: AUTHORS: Melville B. Nimmer, author 1963-85; David Nimmer, revision author 1986 to present. ..."
+// Coverage reads "Through August 2026; Release No. 126" or "Current through the 2007 Edition."
 function parseSourceInfo(el) {
 	var t = el ? spacedText(el) : '', pub = /Publisher:\s*(.+?)\s+(?:Coverage|Frequency|Update Schedule|Description):/.exec(t),
-		cov = new RegExp('Coverage:\\s*Through\\s+((?:' + MONTHS + ')\\.?\\s+\\d{4})', 'i').exec(t), au = /AUTHORS?:\s*(.{0,400})/.exec(t), names = [], m, nameRE = /([A-Z][\w.'\u2019-]*(?:\s+[A-Z][\w.'\u2019-]*)+),\s+(?:[a-z]+\s+)*(?:author|editor)\b/g;
+		cov = new RegExp('Coverage:\\s*(?:Current\\s+)?through\\s+(?:the\\s+)?((?:(?:' + MONTHS + ')\\.?\\s+)?\\d{4})', 'i').exec(t),
+		au = /AUTHORS?:\s*(.{0,400})/.exec(t), names = [], m, nameRE = /([A-Z][\w.'\u2019-]*(?:\s+[A-Z][\w.'\u2019-]*)+),\s+(?:[a-z]+\s+)*(?:author|editor)\b/g;
 	while (au && (m = nameRE.exec(au[1]))) names.push(m[1]); // "Melville B. Nimmer, author 1963-85; David Nimmer, revision author 1986 to present."
 	return { publisher: pub ? pub[1] : '', date: cov ? cov[1] : '', author: names.join('; ') };
 }

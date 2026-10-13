@@ -221,9 +221,24 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       if (r.ok) {
         const FW = await load('translators/Westlaw (legal).js'), rd = new DOMParser().parseFromString(await r.text(), 'text/html'), U = 'https://1.next.westlaw.com/Document/N2A5B4C6D7E8F9A0B1C2D3E4F5A6B7C8D/View/FullText.html';
         eq(FW.T.detectWeb(rd, U), 'book', 'real Model Penal Code page detect'); await FW.T.doWeb(rd, U); const a = FW.items[0];
-        eq(pick(a, ['itemType', 'title', 'publisher', 'extra']), { itemType: 'book', title: 'Model Penal Code', publisher: 'American Law Institute', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Model Penal Code page item');
+        eq(pick(a, ['itemType', 'title', 'publisher', 'date', 'extra']), { itemType: 'book', title: 'Model Penal Code', publisher: 'American Law Institute', date: '1985', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Model Penal Code page item (the year is filled in as 1985)');
         eq(a.creators.map(c => c.lastName), ['American Law Institute'], 'real Model Penal Code page: the American Law Institute as author');
         eq(a.notes[0].note.replace(/<[^>]*>/g, ''), 'Section: \u00a7 2.06. Liability for Conduct of Another; Complicity.', 'real Model Penal Code page: the section with its heading');
+      }
+    }
+    { // the same page saved with the Source Information dialog open (Coverage: "Current through the 2007 Edition.")
+      const r = await fetch('../test pages/' + encodeURIComponent('lexis model penal code source popup.html'), { cache: 'no-store' });
+      if (r.ok) {
+        const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'book', 'real Lexis Model Penal Code (source popup) detect'); await RX.T.doWeb(rd, u); const a = RX.items.pop();
+        eq(pick(a, ['itemType', 'title', 'publisher', 'date', 'extra']), { itemType: 'book', title: 'Model Penal Code', publisher: 'American Law Institute', date: '1985', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Lexis Model Penal Code item with the source dialog open: still 1985, not the Coverage\'s 2007');
+      }
+    }
+    { // the Model Penal Code on Lexis+: no date (its copyright line gives the year of the page, 2026)
+      const r = await fetch('../test pages/' + encodeURIComponent('lexis model penal code.html'), { cache: 'no-store' });
+      if (r.ok) {
+        const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'book', 'real Lexis Model Penal Code detect'); await RX.T.doWeb(rd, u); const a = RX.items.pop();
+        eq(pick(a, ['itemType', 'title', 'publisher', 'date', 'extra']), { itemType: 'book', title: 'Model Penal Code', publisher: 'American Law Institute', date: '1985', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Lexis Model Penal Code item (1985, not the page copyright\'s 2026)');
+        eq(a.notes[0].note.replace(/<[^>]*>/g, ''), 'Section: \u00a7 2.06. Liability for Conduct of Another; Complicity.', 'real Lexis Model Penal Code: the section with its heading');
       }
     }
     for (const [file, want, label] of [

@@ -52,13 +52,13 @@ otherwise on the synthetic fixtures in `fixtures/`, whose markup copies the real
   the page being the star page where the highlight starts; "**" parallel pagination is skipped), and the URL is a link that finds the case
   by its citation (`…Results.html?query=find:499 U.S. 340#autoLogin`, as citation-phoenix does), which works for anyone with Westlaw
   access; a case with no reporter citation keeps its document address.
-* **Restatements** (Westlaw and Lexis+; also the Model Penal Code, as Westlaw's Uniform Laws Annotated prints it) become Books marked as citation-phoenix's *restatement* type (`mlzsync1:{"xtype":"restatement"}`
+* **Restatements** (Westlaw and Lexis+; also the Model Penal Code, as Westlaw's Uniform Laws Annotated and Lexis+ print it) become Books marked as citation-phoenix's *restatement* type (`mlzsync1:{"xtype":"restatement"}`
   in Extra), so the hicite exporter writes them as model codes ("Restatement (Second) of Torts § 402A (Am. L. Inst. 1965)"). The item is the
   work, not the section: Title without the section ("Restatement (Second) of Torts"; Westlaw's full title, "Restatement (Third) of Torts:
   Liability for Physical and Emotional Harm", is read from the breadcrumb because its citation line abbreviates it), the American Law
   Institute as Author and Publisher, the Date (the year), a draft's name in Edition ("Tentative Draft No. 2"), and the section with its
   heading in a note. Lexis+ titles such as `Restat 2d of Torts, § 552A` are normalized, and the year comes from the closing
-  "Copyright (c) 1977, The American Law Institute" line. Without citation-phoenix the marker in Extra is inert. The Model Penal Code page gives no year (its footer says "Current through 2025 Annual Meeting"), so Date is left blank (hicite then prints "n.d."); add the year of the official text by hand.
+  "Copyright (c) 1977, The American Law Institute" line. Without citation-phoenix the marker in Extra is inert. The Model Penal Code pages give no year of the text (Westlaw's footer says "Current through 2025 Annual Meeting"; Lexis+'s copyright line gives the year of the page, 2026, and its Source Information Coverage the edition it carries, 2007), so Date is filled in as 1985, the year the Bluebook cites it by (the Official Draft and Revised Comments); correct it by hand for an article cited to another text.
 * **Journal-article authors** on Lexis are read from the "Author:" line, including joint authors separated by commas and footnote marks
   ("A,* B,** & C***"); Westlaw's "A , B , C" is split too. Lexis category prefixes ("ARTICLE:", "RESPONSE:") are dropped from titles.
 * **Regulations** (C.F.R., Federal Register, state codes such as NYCRR) are statutes with that code. The title is the section heading (Lexis: the
