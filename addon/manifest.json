@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Legal Translators (Westlaw, Lexis+, Cornell LII, Federal Register, Bloomberg Law)",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Installs web translators for Westlaw, Lexis+, the Cornell Legal Information Institute, the Federal Register and Bloomberg Law dockets, so the Zotero Connector can save cases, statutes, regulations, articles and treatises.",
   "applications": {
     "zotero": {
