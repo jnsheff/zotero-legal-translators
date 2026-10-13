@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-10-13 18:28:33"
+	"lastUpdated": "2026-10-13 18:29:30"
 }
 
 /*
@@ -218,9 +218,6 @@ function encodeJurisdiction(key) {
 	return ('00' + key.length).slice(-3) + key + label;
 }
 
-// The Model Penal Code pages give no year of the text; the Bluebook's example cites it "(Am. L. Inst. 1985)" (the Official Draft and Revised Comments)
-var MODEL_PENAL_CODE_YEAR = '1985';
-
 // Marks the item as citation-phoenix's "restatement" type; hicite exports it as a model code
 var RESTATEMENT_EXTRA = 'mlzsync1:{"xtype":"restatement"}';
 
@@ -244,7 +241,7 @@ function buildItem(parsed, extra) {
 		item.title = parsed.title;
 		item.creators.push({ lastName: 'American Law Institute', creatorType: 'author', fieldMode: 1 });
 		item.publisher = 'American Law Institute';
-		item.date = parsed.year || (/^Model Penal Code\b/i.test(parsed.title) ? MODEL_PENAL_CODE_YEAR : '');
+		if (parsed.year) item.date = parsed.year;
 		if (parsed.edition) item.edition = parsed.edition; // a draft's name: "Tentative Draft No. 2"
 		item.extra = RESTATEMENT_EXTRA;
 		if (parsed.section) item.notes.push({ note: 'Section: ' + parsed.section });
