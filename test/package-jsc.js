@@ -19,7 +19,7 @@ var src = read('addon/bootstrap.js');
 var B = new Function('Zotero', 'IOUtils', 'PathUtils', 'fetch', src + '; return { startup: startup, uninstall: uninstall, list: TRANSLATORS };')(Zotero, IOUtils, PathUtils, null);
 
 // the list is exactly the translators build.py produces
-var built = ['Westlaw (legal).js', 'Lexis+ (legal).js', 'Cornell LII (legal).js', 'Federal Register (legal).js'];
+var built = ['Westlaw (legal).js', 'Lexis+ (legal).js', 'Cornell LII (legal).js', 'Federal Register (legal).js', 'Bloomberg Law (legal).js'];
 eq(B.list, built, 'installer lists the built translators');
 var manifest = JSON.parse(read('addon/manifest.json'));
 eq(manifest.applications.zotero.id, 'zotero-legal-translators@zotero.local', 'plugin id');

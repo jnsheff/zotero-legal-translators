@@ -1,7 +1,7 @@
 /* Installs the translators in translators/ into Zotero's translators directory (and keeps them current),
  * removing them again when the plugin is uninstalled. */
 
-const TRANSLATORS = ['Westlaw (legal).js', 'Lexis+ (legal).js', 'Cornell LII (legal).js', 'Federal Register (legal).js'];
+const TRANSLATORS = ['Westlaw (legal).js', 'Lexis+ (legal).js', 'Cornell LII (legal).js', 'Federal Register (legal).js', 'Bloomberg Law (legal).js'];
 
 async function readPackaged(url) {
 	// getContentsFromURLAsync cannot fetch jar: URLs; getResourceAsync opens a channel

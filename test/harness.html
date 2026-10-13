@@ -133,6 +133,20 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     eq(FR.T.detectWeb(d, 'https://www.federalregister.gov/documents/search?q=x'), false, 'a search page is not a document');
     eq(FR.T.detectWeb(await FR.doc('other.html'), U), false, 'a page without document details is not a document');
   }
+  // Bloomberg Law dockets
+  {
+    const BB = await load('translators/Bloomberg Law (legal).js'), U = 'https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8?bc=abc';
+    const WANT = { itemType: 'case', caseName: 'Complaint: Joshi v. OpenAI Foundation', court: 'N.D. Fla.', docketNumber: '4:26-cv-00222', dateDecided: 'May 10, 2026', url: 'https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8',
+      extra: 'mlzsync1:{"extrafields":{"jurisdiction":"012us:c11:fl.ndUnited States|US|Eleventh Circuit|N.D. Florida","filingDate":"May 10, 2026"}}\nDocket Entry: 1\nCase Number: 4:26-cv-00222-MW-MJF\nPages: 76' };
+    const d = await BB.doc('bloomberg-docket-complaint.html');
+    eq(BB.T.detectWeb(d, U), 'case', 'Bloomberg Law docket document detect'); await BB.T.doWeb(d, U);
+    eq(pick(BB.items[0], Object.keys(WANT)), WANT, 'Bloomberg Law complaint item');
+    eq(BB.items[0].attachments, [{ title: 'Snapshot', mimeType: 'application/pdf', url: 'https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8/download?imagename=1' }], 'Bloomberg Law: the PDF is the snapshot');
+    eq(BB.T.detectWeb(d, 'https://www.bloomberglaw.com/product/blaw/search/results'), false, 'Bloomberg Law: not a document address');
+    eq(BB.T.detectWeb(await BB.doc('other.html'), U), false, 'Bloomberg Law: a page that is not a docket document');
+    const r = await fetch('../test pages/' + encodeURIComponent('JOSHI v OPENAI FOUNDATION et al, Docket No. 4_26-cv-00222 (N.D. Fla. May 10, 2026), Court Docket.html'), { cache: 'no-store' });
+    if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(BB.T.detectWeb(rd, U), 'case', 'real Bloomberg Law page detect'); await BB.T.doWeb(rd, U); eq(pick(BB.items[1], Object.keys(WANT)), WANT, 'real Bloomberg Law page item'); eq(BB.items[1].attachments.map(a => a.url), ['https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8/download?imagename=1'], 'real Bloomberg Law page: the PDF'); }
+  }
   // Cornell LII
   { const L = await load(LI), B = 'https://www.law.cornell.edu';
     const S = (n, p, want, m) => (async () => {

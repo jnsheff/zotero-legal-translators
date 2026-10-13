@@ -8,6 +8,7 @@ Zotero web translators (for the Zotero Connector) that save legal sources from W
 | `Cornell LII (legal).js` | `law.cornell.edu` | the primary sources: U.S. Code, CFR, Supreme Court opinions, the Constitution, the federal rules, the UCC and state regulations |
 | `Lexis+ (legal).js` | `plus.lexis.com`, `advance.lexis.com` | the same |
 | `Federal Register (legal).js` | `www.federalregister.gov` | rules, proposed rules, notices and presidential documents, as statutes filed under `Fed. Reg.` |
+| `Bloomberg Law (legal).js` | `www.bloomberglaw.com` | court papers from a docket (complaints, motions, orders), as cases named for the paper |
 
 Cases fill Case Name, Reporter, Volume, First Page, Court, Date Decided, Docket Number (`WL` and `U.S. Dist. LEXIS`
 cites are handled: volume = year, page = document number). Statutes fill Code, Code Number, Section, Name of Act and
@@ -89,6 +90,15 @@ Document Type, Agency, CFR, Effective Date (also Comments Close / Open), Documen
 printed version (the "View printed version (PDF)" link, on govinfo.gov) is the attachment, titled "Snapshot"; a page without one saves the page itself.
 hicite exports the item as a government document (`90 Fed. Reg. 40975 (Aug. 22, 2025)`). Search-result pages are not handled. The fixture
 `fixtures/federalregister-rule.html` is trimmed from the page for 2025-16129; the site refuses scripted downloads, so the page has to be saved from a browser.
+
+### Bloomberg Law
+
+A docket document page (`/product/blaw/document/X…` whose title reads "JOSHI v OPENAI FOUNDATION et al, Docket No. 4:26-cv-00222 (N.D. Fla. May 10, 2026), Court Docket")
+is saved as a Case named for the paper and the case, the way the library files court papers and hicite cites them (`\defcasedoc`): Case Name
+"Complaint: Joshi v. OpenAI Foundation", Court `N.D. Fla.`, Docket Number, Date Decided = the date the document was filed, and, in Extra, citation-phoenix's
+block (jurisdiction and filing date, as for the other cases) followed by Docket Entry, Case Number (with the judges' initials), and Pages. The viewer draws the PDF
+with PDF.js, so the page holds its first-page text: the paper's title ("COMPLAINT"), the footer ("Case 4:26-cv-00222-MW-MJF / Document 1 / Filed 05/10/26 / Page 1 of 76"),
+and the spelling of the party names ("OpenAI", which the title prints as "OPENAI"). For a part of a multi-part document the paper is the part's title ("Civil Cover Sheet"). The PDF is the snapshot: the page gives no address for it, but the viewer's "Open PDF in New Window" opens `<document address>/download?imagename=<part number>`, which is what the translator attaches (the part number for the parts after the first is an assumption).
 
 ### Cornell LII
 
