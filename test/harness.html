@@ -149,6 +149,12 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       eq([p2.caseName, p2.attachments.map(a => a.url), /\nPart: 2: Civil Cover Sheet\n/.test(p2.extra)], ['Civil Cover Sheet: Joshi v. OpenAI Foundation', ['https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8/download?imagename=2'], true], 'Bloomberg Law part 2: its title (the paper and an Extra line) and only its PDF');
     }
     eq(BB.Z.calls > 0, true, 'Bloomberg Law: asks the connector to watch for the page being drawn');
+    { // a part whose own first page never spells "OpenAI" in mixed case: the list of parts does
+      const d3 = await BB.doc('bloomberg-docket-complaint.html');
+      d3.querySelectorAll('#text-layer-1 span').forEach(sp => { sp.textContent = sp.textContent.replace(/OpenAI/g, 'OPENAI'); });
+      await BB.T.doWeb(d3, U); const p3 = BB.items.pop();
+      eq(p3.caseName, 'Complaint: Joshi v. OpenAI Foundation', 'Bloomberg Law: party names spelled from the part titles when the page does not');
+    }
     eq(BB.T.detectWeb(d, 'https://www.bloomberglaw.com/product/blaw/search/results'), false, 'Bloomberg Law: not a document address');
     eq(BB.T.detectWeb(await BB.doc('other.html'), U), false, 'Bloomberg Law: a page that is not a docket document');
     const r = await fetch('../test pages/' + encodeURIComponent('JOSHI v OPENAI FOUNDATION et al, Docket No. 4_26-cv-00222 (N.D. Fla. May 10, 2026), Court Docket.html'), { cache: 'no-store' });

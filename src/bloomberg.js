@@ -57,6 +57,7 @@ function readDocket(doc, url) {
 	}
 	// the parts of a multi-part document: the current one is not a button
 	var part = null, lis = doc.querySelectorAll('.SidebarDocketsMultipart li');
+	for (i = 0; i < lis.length; i++) texts.push(squash(lis[i].textContent)); // the part titles spell the names too ("Summons for OpenAI FOUNDATION"): a part's first page may not
 	for (i = 0; i < lis.length; i++) {
 		if (!lis[i].querySelector('button') && (f = /^\s*Part\s+(\d+):\s*(.*)$/.exec(squash(lis[i].textContent)))) {
 			part = { number: f[1], title: squash(f[2]).replace(/^(.+?)\s+\1$/, '$1') }; // the list repeats some titles: "Civil Cover Sheet Civil Cover Sheet"
