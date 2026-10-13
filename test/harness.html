@@ -148,6 +148,7 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       await BB.T.doWeb(d2, U); const p2 = BB.items.pop();
       eq([p2.caseName, p2.attachments.map(a => a.url), /\nPart: 2: Civil Cover Sheet\n/.test(p2.extra)], ['Civil Cover Sheet: Joshi v. OpenAI Foundation', ['https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8/download?imagename=2'], true], 'Bloomberg Law part 2: its title (the paper and an Extra line) and only its PDF');
     }
+    eq(BB.Z.calls > 0, true, 'Bloomberg Law: asks the connector to watch for the page being drawn');
     eq(BB.T.detectWeb(d, 'https://www.bloomberglaw.com/product/blaw/search/results'), false, 'Bloomberg Law: not a document address');
     eq(BB.T.detectWeb(await BB.doc('other.html'), U), false, 'Bloomberg Law: a page that is not a docket document');
     const r = await fetch('../test pages/' + encodeURIComponent('JOSHI v OPENAI FOUNDATION et al, Docket No. 4_26-cv-00222 (N.D. Fla. May 10, 2026), Court Docket.html'), { cache: 'no-store' });

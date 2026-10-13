@@ -84,8 +84,23 @@ function pdfURL(d) {
 	return d.url + '/download?imagename=' + (d.part ? d.part.number : '1');
 }
 
+// The site is a single-page application: the document is drawn after the page has loaded, and replaced when you move to another document, so ask
+// the connector to run detection again whenever the page changes (every time: it allows one observer and drops it after the first change).
+function watchForChanges(doc) {
+	try {
+		if (doc.body && typeof Z !== 'undefined' && Z.monitorDOMChanges) Z.monitorDOMChanges(doc.body, { childList: true, subtree: true });
+	}
+	catch (e) {
+		Zotero.debug('Bloomberg Law (legal): monitorDOMChanges: ' + e);
+	}
+}
+
 function detectWeb(doc, url) {
-	return DOCUMENT_URL.test(url) && readDocket(doc, url) ? 'case' : false;
+	if (!DOCUMENT_URL.test(url)) return false;
+	watchForChanges(doc);
+	var d = readDocket(doc, url);
+	Zotero.debug('Bloomberg Law (legal): detectWeb -> ' + (d ? 'case' : 'false (no docket title or viewer yet: title "' + squash(doc.title) + '", viewer ' + !!doc.querySelector('#document-content') + ')'));
+	return d ? 'case' : false;
 }
 
 async function doWeb(doc, url) {
