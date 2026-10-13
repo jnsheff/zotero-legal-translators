@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-10-13 17:05:04"
+	"lastUpdated": "2026-10-13 17:10:07"
 }
 
 /*
@@ -364,11 +364,11 @@ function readDocket(doc, url) {
 		else if (!paper && texts[i].length < 120 && texts[i] === texts[i].toUpperCase() && (f = PAPER_TITLE.exec(texts[i]))) paper = f[1];
 	}
 	// the parts of a multi-part document: the current one is not a button
-	var part = null, parts = [], lis = doc.querySelectorAll('.SidebarDocketsMultipart li');
+	var part = null, lis = doc.querySelectorAll('.SidebarDocketsMultipart li');
 	for (i = 0; i < lis.length; i++) {
-		if ((f = /^\s*Part\s+(\d+):\s*(.*)$/.exec(squash(lis[i].textContent)))) {
-			parts.push({ number: f[1], title: squash(f[2]).replace(/^(.+?)\s+\1$/, '$1') }); // the list repeats some titles: "Civil Cover Sheet Civil Cover Sheet"
-			if (!lis[i].querySelector('button')) part = parts[parts.length - 1];
+		if (!lis[i].querySelector('button') && (f = /^\s*Part\s+(\d+):\s*(.*)$/.exec(squash(lis[i].textContent)))) {
+			part = { number: f[1], title: squash(f[2]).replace(/^(.+?)\s+\1$/, '$1') }; // the list repeats some titles: "Civil Cover Sheet Civil Cover Sheet"
+			if (/^\d*$/.test(part.title)) part.title = ''; // Part 1 is listed by its number alone
 		}
 	}
 	var sides = m[1].split(/\s+v\.?\s+/i);
@@ -377,29 +377,19 @@ function readDocket(doc, url) {
 		var y = +footer.filed[3];
 		filed = MONTH_NAMES[+footer.filed[1] - 1] + ' ' + (+footer.filed[2]) + ', ' + (y < 100 ? 2000 + y : y);
 	}
-	return { plaintiff: party(sides[0], texts), defendant: party(sides.slice(1).join(' v. '), texts), docket: m[2], court: m[3], date: findDate(m[4]), filed: filed, footer: footer, paper: paper, part: part, parts: parts,
+	return { plaintiff: party(sides[0], texts), defendant: party(sides.slice(1).join(' v. '), texts), docket: m[2], court: m[3], date: findDate(m[4]), filed: filed, footer: footer, paper: paper, part: part,
 		url: url.replace(/[?#].*$/, '') };
 }
 
 function paperName(d) {
-	var p = d.part && +d.part.number > 1 ? d.part.title : d.paper;
+	var p = d.part && +d.part.number > 1 && d.part.title ? d.part.title : d.paper;
 	if (!p) return '';
 	return p === p.toUpperCase() ? p.charAt(0) + p.slice(1).toLowerCase() : p;
 }
 
 // The address of the PDF: the viewer's "Open PDF in New Window" opens <document address>/download?imagename=<part number> (the first part is 1)
-function pdfURL(d, number) {
-	return d.url + '/download?imagename=' + number;
-}
-
-// One PDF per part ("Part 2: Civil Cover Sheet"); a document of one part has a single "Snapshot". The first part's list entry is just its number
-// ("Part 1: 1"), so it is named for the paper when that is the part showing.
-function attachments(d, paper) {
-	if (d.parts.length < 2) return [{ title: 'Snapshot', mimeType: 'application/pdf', url: pdfURL(d, d.part ? d.part.number : '1') }];
-	return d.parts.map(function (p) {
-		var title = /^\d*$/.test(p.title) ? (d.part && d.part.number === p.number && paper ? paper : '') : p.title;
-		return { title: 'Part ' + p.number + (title ? ': ' + title : ''), mimeType: 'application/pdf', url: pdfURL(d, p.number) };
-	});
+function pdfURL(d) {
+	return d.url + '/download?imagename=' + (d.part ? d.part.number : '1');
 }
 
 function detectWeb(doc, url) {
@@ -420,12 +410,11 @@ async function scrape(doc, url) {
 	var extra = [];
 	if (d.footer.document) extra.push('Docket Entry: ' + d.footer.document);
 	if (d.footer.caseNo && d.footer.caseNo !== d.docket) extra.push('Case Number: ' + d.footer.caseNo);
+	if (d.part) extra.push('Part: ' + d.part.number + (d.part.title ? ': ' + d.part.title : '')); // a multi-part document: the part showing and its title
 	if (d.footer.pages) extra.push('Pages: ' + d.footer.pages);
 	if (d.filed && d.date && d.filed !== d.date) extra.push('Docket Filed: ' + d.date);
 	if (extra.length) item.extra = (item.extra ? item.extra + '\n' : '') + extra.join('\n');
-	attachments(d, paper).forEach(function (a) {
-		item.attachments.push(a);
-	});
+	item.attachments.push({ title: 'Snapshot', mimeType: 'application/pdf', url: pdfURL(d) }); // only the part showing: another part is saved from its own page
 	item.complete();
 }
 
