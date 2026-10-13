@@ -71,7 +71,7 @@ function readDocket(doc, url) {
 }
 
 function paperName(d) {
-	var p = d.part && +d.part.number > 1 ? d.part.title : d.paper;
+	var p = d.part && +d.part.number > 1 ? d.part.title.replace(/^(.+?)\s+\1$/, '$1') : d.paper; // the list repeats some titles: "Civil Cover Sheet Civil Cover Sheet"
 	if (!p) return '';
 	return p === p.toUpperCase() ? p.charAt(0) + p.slice(1).toLowerCase() : p;
 }

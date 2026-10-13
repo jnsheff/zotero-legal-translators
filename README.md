@@ -98,7 +98,7 @@ is saved as a Case named for the paper and the case, the way the library files c
 "Complaint: Joshi v. OpenAI Foundation", Court `N.D. Fla.`, Docket Number, Date Decided = the date the document was filed, and, in Extra, citation-phoenix's
 block (jurisdiction and filing date, as for the other cases) followed by Docket Entry, Case Number (with the judges' initials), and Pages. The viewer draws the PDF
 with PDF.js, so the page holds its first-page text: the paper's title ("COMPLAINT"), the footer ("Case 4:26-cv-00222-MW-MJF / Document 1 / Filed 05/10/26 / Page 1 of 76"),
-and the spelling of the party names ("OpenAI", which the title prints as "OPENAI"). For a part of a multi-part document the paper is the part's title ("Civil Cover Sheet"). The PDF is the snapshot: the page gives no address for it, but the viewer's "Open PDF in New Window" opens `<document address>/download?imagename=<part number>`, which is what the translator attaches (the part number for the parts after the first is an assumption).
+and the spelling of the party names ("OpenAI", which the title prints as "OPENAI"). For a part of a multi-part document the paper is the part's title ("Civil Cover Sheet"). The PDF is the snapshot: the page gives no address for it, but the viewer's "Open PDF in New Window" opens `<document address>/download?imagename=<part number>`, which is what the translator attaches (`imagename=1` for the first part, `2` for the second).
 
 ### Cornell LII
 
