@@ -342,9 +342,9 @@ function encodeJurisdiction(key) {
 
 // Restatements of the Law (American Law Institute)
 //   Westlaw "Restatement (Second) of Torts § 402A (1965)", Lexis+ "Restat 2d of Torts, § 552A",
-//   drafts "Restatement of the Law, Copyright § 1 (Tentative Draft No. 2, 2021)"
+//   drafts "Restatement of the Law, Copyright § 1 (Tentative Draft No. 2, 2021)"; and the Model Penal Code ("Model Penal Code § 2.06")
 function isRestatement(heading) {
-	return /^\s*Restat(?:ement)?s?\b/i.test(heading || '');
+	return /^\s*(?:Restat(?:ement)?s?\b|Model Penal Code\b)/i.test(heading || ''); // the Model Penal Code is cited like a restatement: "(Am. L. Inst. 1985)"
 }
 
 var RESTATEMENT_SERIES = { '1st': 'First', '2d': 'Second', '2nd': 'Second', '3d': 'Third', '3rd': 'Third', '4th': 'Fourth',

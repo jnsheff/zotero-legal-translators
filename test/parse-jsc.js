@@ -40,6 +40,9 @@ eq(S.findDate('decided Mar. 27, 1991 by the court'), 'March 27, 1991', 'date, mo
 eq(S.findDate('through Oct 1, 2026'), 'October 1, 2026', 'date: "Oct" without a period');
 eq(S.latestDate('added Subpart B, effective Sept. 16, 2012; revised (c), effective May. 2, 2016; revised, effective Jan. 8, 2021.'), 'January 8, 2021', 'the latest of several dates');
 eq(S.latestDate('no dates here'), '', 'no date');
+eq(S.isRestatement('Model Penal Code \u00a7 2.06'), true, 'the Model Penal Code is cited like a restatement');
+eq(S.parseRestatement('Model Penal Code \u00a7 2.06'), { name: 'Model Penal Code', section: '\u00a7 2.06', year: '', edition: '' }, 'parse: Model Penal Code \u00a7 2.06');
+eq(S.parseRestatement('Model Penal Code \u00a7 210.2 (1962)'), { name: 'Model Penal Code', section: '\u00a7 210.2', year: '1962', edition: '' }, 'parse: Model Penal Code with a year');
 eq(S.findAuthor('Length: 56860 words Author: Christopher Buccafusco,* Mark A. Lemley,** & Jonathan S. Masur*** Copyright\u00a92018 Christopher Buccafusco'), 'Christopher Buccafusco; Mark A. Lemley; Jonathan S. Masur', 'three authors separated by commas and footnote marks');
 eq(S.findAuthor('Author: Jeremy N. Sheff * * Associate Professor of Law'), 'Jeremy N. Sheff', 'one author, marks, then a title');
 eq(S.latestDate('July 19, 1952, ch 950'), 'July 19, 1952', 'a date before 1970');

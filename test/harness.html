@@ -216,6 +216,16 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
         eq(a.abstractNote.length > 1000, true, 'real Federal Register page: the whole summary');
       }
     }
+    { // the Model Penal Code, as Uniform Laws Annotated on Westlaw prints it
+      const r = await fetch('../test pages/' + encodeURIComponent('\u00a7 2.06. Liability for Conduct of Another; Complicity. _ Secondary Sources _ National _ Westlaw Advantage.html'), { cache: 'no-store' });
+      if (r.ok) {
+        const FW = await load('translators/Westlaw (legal).js'), rd = new DOMParser().parseFromString(await r.text(), 'text/html'), U = 'https://1.next.westlaw.com/Document/N2A5B4C6D7E8F9A0B1C2D3E4F5A6B7C8D/View/FullText.html';
+        eq(FW.T.detectWeb(rd, U), 'book', 'real Model Penal Code page detect'); await FW.T.doWeb(rd, U); const a = FW.items[0];
+        eq(pick(a, ['itemType', 'title', 'publisher', 'extra']), { itemType: 'book', title: 'Model Penal Code', publisher: 'American Law Institute', extra: 'mlzsync1:{"xtype":"restatement"}' }, 'real Model Penal Code page item');
+        eq(a.creators.map(c => c.lastName), ['American Law Institute'], 'real Model Penal Code page: the American Law Institute as author');
+        eq(a.notes[0].note.replace(/<[^>]*>/g, ''), 'Section: \u00a7 2.06. Liability for Conduct of Another; Complicity.', 'real Model Penal Code page: the section with its heading');
+      }
+    }
     for (const [file, want, label] of [
       ['lexis treatise.html', { itemType: 'bookSection', title: 'The Reproduction Right', bookTitle: 'Nimmer on Copyright', volume: '2', extra: 'Section: 8.02', publisher: 'Matthew Bender & Company, Inc.', date: '2026' }, 'real Lexis treatise (a section sign in the title, but "Find references to this treatise")']]) {
       const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
