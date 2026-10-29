@@ -160,6 +160,43 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
     const r = await fetch('../test pages/' + encodeURIComponent('JOSHI v OPENAI FOUNDATION et al, Docket No. 4_26-cv-00222 (N.D. Fla. May 10, 2026), Court Docket.html'), { cache: 'no-store' });
     if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(BB.T.detectWeb(rd, U), 'case', 'real Bloomberg Law page detect'); await BB.T.doWeb(rd, U); eq(pick(BB.items[1], Object.keys(WANT)), WANT, 'real Bloomberg Law page item'); eq(BB.items[1].attachments.map(a => a.url), ['https://www.bloomberglaw.com/product/blaw/document/X6RSR9K0SBB8TGPOG903PHAQ7S8/download?imagename=1'], 'real Bloomberg Law page: the PDF'); }
   }
+  // LegiScan
+  {
+    const LS = await load('translators/LegiScan (legal).js'), base = 'https://legiscan.com/';
+    const fx = async (n, mod) => { const d = await LS.doc(n); if (mod) mod(d); return d; };
+    for (const [file, url, want, label] of [
+      ['Bill Text_ CA SB942 _ 2023-2024 _ Regular Session _ Chaptered _ LegiScan.html', base + 'CA/text/SB942/id/3021807', { nameOfAct: 'California AI Transparency Act', code: 'Cal. Stat.', codeNumber: '2024', publicLawNumber: 'ch. 291', dateEnacted: 'September 19, 2024' }, 'real LegiScan California chaptered page'],
+      ['Bill Text_ CO SB024 _ 2024 _ Regular Session _ Enrolled _ LegiScan.html', base + 'CO/text/SB024/id/2978272', { nameOfAct: 'Local Lodging Tax Reporting on Sales Return', code: 'Colo. Sess. Laws', codeNumber: '2024', publicLawNumber: 'S.B. 24-024', dateEnacted: 'April 19, 2024' }, 'real LegiScan Colorado enrolled page']]) {
+      const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
+      if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(LS.T.detectWeb(rd, url), 'statute', label + ' detect'); await LS.T.doWeb(rd, url); eq(pick(LS.items.pop(), Object.keys(want)), want, label); }
+    }
+    // a chaptered California statute: the text is the snapshot, no status
+    let d = await fx('legiscan-ca-chaptered.html'), U = base + 'CA/text/SB942/id/3021807';
+    eq(LS.T.detectWeb(d, U), 'statute', 'LegiScan chaptered text detect'); await LS.T.doWeb(d, U); let a = LS.items.pop();
+    eq(pick(a, ['itemType', 'nameOfAct', 'code', 'codeNumber', 'publicLawNumber', 'session', 'dateEnacted', 'url', 'libraryCatalog']),
+      { itemType: 'statute', nameOfAct: 'California AI Transparency Act', code: 'Cal. Stat.', codeNumber: '2024', publicLawNumber: 'ch. 291', session: '2023-2024 Regular Session', dateEnacted: 'September 19, 2024', url: U, libraryCatalog: 'LegiScan' }, 'LegiScan chaptered statute');
+    eq(a.extra, 'mlzsync1:{"extrafields":{"jurisdiction":"005us:caUnited States|US|California"}}\nBill: S.B. 942\nVersion: Chaptered', 'LegiScan chaptered: Extra has the bill and version, no status');
+    eq(a.attachments.map(x => x.document ? 'page' : x.url), ['page'], 'LegiScan chaptered: the page is the snapshot');
+    // an enrolled Colorado statute whose text is an embedded PDF
+    d = await fx('legiscan-co-enrolled.html'); U = base + 'CO/text/SB024/id/2978272'; eq(LS.T.detectWeb(d, U), 'statute', 'LegiScan enrolled (PDF) detect'); await LS.T.doWeb(d, U); a = LS.items.pop();
+    eq(pick(a, ['nameOfAct', 'code', 'codeNumber', 'publicLawNumber', 'session', 'dateEnacted']),
+      { nameOfAct: 'Local Lodging Tax Reporting on Sales Return', code: 'Colo. Sess. Laws', codeNumber: '2024', publicLawNumber: 'S.B. 24-024', session: '2024 Regular Session', dateEnacted: 'April 19, 2024' }, 'LegiScan enrolled statute with no chapter');
+    eq(a.extra.split('\n').slice(1), ['Bill: S.B. 24-024', 'Version: Enrolled'], 'LegiScan enrolled: no status');
+    eq(a.attachments, [{ title: 'Snapshot', mimeType: 'application/pdf', url: 'https://legiscan.com/CO/text/SB024/id/2978272/Colorado-2024-SB024-Enrolled.pdf' }], 'LegiScan enrolled: the PDF is the snapshot');
+    // a pending bill: the California page with a header like an amended draft's (synthetic: the one real pending bill saved is the drafts list)
+    d = await fx('legiscan-ca-chaptered.html', dd => {
+      dd.title = 'Bill Text: CA SB1106 | 2025-2026 | Regular Session | Amended | LegiScan';
+      dd.querySelector('ul.tabs.primary li.active').classList.remove('active'); dd.querySelectorAll('ul.tabs.primary li')[2].classList.add('active');
+      const st = [...dd.querySelectorAll('b')].find(x => x.textContent === 'Status:'), it = st.nextElementSibling;
+      it.textContent = '(Engrossed)'; it.nextSibling.textContent = ' 2026-08-13 - August 13 hearing: Held in committee and under submission. ';
+      [...dd.querySelectorAll('b')].find(x => x.textContent === 'Bill Title:').nextSibling.textContent = ' Agentic artificial intelligence.';
+      dd.querySelector('meta[property="og:description"]').setAttribute('content', 'Bill Text (2026-07-02) Agentic artificial intelligence. [Amended]');
+    });
+    U = base + 'CA/text/SB1106/id/3300000'; eq(LS.T.detectWeb(d, U), 'statute', 'LegiScan pending detect'); await LS.T.doWeb(d, U); a = LS.items.pop();
+    eq(pick(a, ['nameOfAct', 'code', 'codeNumber', 'publicLawNumber', 'dateEnacted']), { nameOfAct: 'Agentic artificial intelligence', code: 'Cal. Stat.', codeNumber: '2026', publicLawNumber: 'S.B. 1106', dateEnacted: 'July 2, 2026' }, 'LegiScan pending bill');
+    eq(a.extra.split('\n').slice(1), ['Bill: S.B. 1106', 'Version: Amended', 'Status: Engrossed August 13, 2026: August 13 hearing: Held in committee and under submission.'], 'LegiScan pending bill: version and status in Extra');
+    eq(LS.T.detectWeb(d, base + 'US/text/HB1/id/1'), false, 'LegiScan: federal bills are not handled'); eq(LS.T.detectWeb(d, base + 'CA/drafts/SB1106/2025'), false, 'LegiScan: a drafts list is not a text');
+  }
   // Cornell LII
   { const L = await load(LI), B = 'https://www.law.cornell.edu';
     const S = (n, p, want, m) => (async () => {

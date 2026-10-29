@@ -9,6 +9,7 @@ Zotero web translators (for the Zotero Connector) that save legal sources from W
 | `Lexis+ (legal).js` | `plus.lexis.com`, `advance.lexis.com` | the same |
 | `Federal Register (legal).js` | `www.federalregister.gov` | rules, proposed rules, notices and presidential documents, as statutes filed under `Fed. Reg.` |
 | `Bloomberg Law (legal).js` | `www.bloomberglaw.com` | court papers from a docket (complaints, motions, orders), as cases named for the paper |
+| `LegiScan (legal).js` | `legiscan.com` (state bill-text pages) | one version of a state bill's text, as a session law (enrolled or chaptered) or a pending bill |
 
 Cases fill Case Name, Reporter, Volume, First Page, Court, Date Decided, Docket Number (`WL` and `U.S. Dist. LEXIS`
 cites are handled: volume = year, page = document number). Statutes fill Code, Code Number, Section, Name of Act and
@@ -99,6 +100,19 @@ is saved as a Case named for the paper and the case, the way the library files c
 block (jurisdiction and filing date, as for the other cases) followed by Docket Entry, Case Number (with the judges' initials), and Pages. The viewer draws the PDF
 with PDF.js, so the page holds its first-page text: the paper's title ("COMPLAINT"), the footer ("Case 4:26-cv-00222-MW-MJF / Document 1 / Filed 05/10/26 / Page 1 of 76"),
 and the spelling of the party names ("OpenAI", which the title prints as "OPENAI"). For a part after the first the paper is the part's title ("Civil Cover Sheet"). Only the part showing is saved, with its PDF as the snapshot: the page gives no address for a PDF, but the viewer's "Open PDF in New Window" opens `<document address>/download?imagename=<part number>`, which is what the translator attaches (`imagename=1` for the first part, `2` for the second). Another part is saved from its own page. A part with a title other than its number ("Part 2: Civil Cover Sheet") names the paper and is recorded in Extra (`Part: 2: Civil Cover Sheet`).
+
+### LegiScan
+
+A state bill-text page (`legiscan.com/CA/text/SB942/id/3021807`; not the federal `/US/` pages, the bill summary or the drafts list) is saved as the version shown. It
+becomes a Statute for a session law: Name of Act = the bill title, Code = the state's session-law reporter (`Cal. Stat.`, `Colo. Sess. Laws`; Bluebook T1, in `SESSION_LAW_REPORTERS`),
+Code Number = the year, Public Law Number = `ch. 291` or, when the page gives no chapter, the bill (`S.B. 24-024`; Colorado's year-first numbering is handled), Session
+("2023-2024 Regular Session"), the URL of the version, and citation-phoenix's jurisdiction (`us:ca`) in Extra with the bill and the version.
+* An **enrolled or chaptered** version is the law: Date Enacted is the date the governor approved it (the "Approved by Governor" line of a California chapter, else the date of a "signed" status), and
+  **no status is saved**.
+* Any **other version** (introduced, amended, engrossed) is a pending bill: Date Enacted is the date of that version and Extra gets `Status:`, the page's status and its latest action.
+* The **snapshot** is the page; when the page embeds the text as a PDF (Colorado's does) it is the PDF named in the page's Download link.
+* **Codification** is not read from the page. Put it in Extra as `Codified: Cal. Bus. & Prof. Code §§ 22757-22757.6` (or `Codified As Amended:`); hicite exports it as "codified at".
+The fixtures are trimmed from saved pages (`fixtures/legiscan-*.html`); the pending-bill test edits the California fixture's header, because no pending bill's text page has been saved.
 
 ### Cornell LII
 

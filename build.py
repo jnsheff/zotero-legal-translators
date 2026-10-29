@@ -34,6 +34,7 @@ T = {
   'LII': dict(translatorID='2b8c3a5e-7d41-4c8e-9a53-6e0f1d2c9b74', label='Cornell LII (legal)', target=r'^https?://(?:www\.)?law\.cornell\.edu/', src='lii.js'),
   'FederalRegister': dict(translatorID='9d1e6b34-5c72-4a0f-8e3b-2f6a7c40d195', label='Federal Register (legal)', target=r'^https?://(?:www\.)?federalregister\.gov/documents/', src='federalregister.js'),
   'Bloomberg': dict(translatorID='5e7a2c91-3b64-4d08-a1f7-8c0e6d2b9a43', label='Bloomberg Law (legal)', target=r'^https?://(?:www\.)?bloomberglaw\.com/product/blaw/document/', src='bloomberg.js'),
+  'LegiScan': dict(translatorID='c71e9a52-6d3b-4f08-b5a4-1e83f20d7c96', label='LegiScan (legal)', target=r'^https?://(?:www\.)?legiscan\.com/[A-Z]{2}/text/', src='legiscan.js'),
   'Lexis': dict(translatorID='4a07416a-1dde-4a8e-b9a1-7aa69007af19', label='Lexis+ (legal)', target=r'^https?://(?:plus|advance)\.lexis\.com/', src='lexis.js'),
 }
 
