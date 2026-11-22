@@ -328,6 +328,17 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'statute', label + ' detect'); await RX.T.doWeb(rd, u); eq(pick(RX.items.pop(), Object.keys(want)), want, label); }
     }
   }
+  { // a real slip opinion (kept out of git); skipped when absent
+    const SW = await load(WL);
+    const rsl = await fetch('../test pages/' + encodeURIComponent('Withers v. City of Aberdeen _ Cases _ Mississippi _ Westlaw Advantage.html'), { cache: 'no-store' });
+    if (rsl.ok) {
+      const rd = new DOMParser().parseFromString(await rsl.text(), 'text/html'), su = 'https://1.next.westlaw.com/Document/I231e398063e511f1926bab87df9beea2/View/FullText.html';
+      eq(SW.T.detectWeb(rd, su), 'case', 'real slip opinion detect'); await SW.T.doWeb(rd, su); const sl = SW.items.pop();
+      eq(pick(sl, ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'extra']),
+        { caseName: 'Withers v. City of Aberdeen', reporter: 'WL', reporterVolume: '2026', firstPage: '1653484', court: 'N.D. Miss.', dateDecided: 'June 8, 2026', docketNumber: 'Civil Action No. 1:24-CV-218-SA-RP',
+          url: 'https://1.next.westlaw.com/Search/Results.html?query=find:2026%20WL%201653484#autoLogin', extra: 'mlzsync1:{"extrafields":{"jurisdiction":"011us:c5:ms.ndUnited States|US|Fifth Circuit|N.D. Mississippi","filingDate":"June 8, 2026"}}' }, 'real slip opinion item (header lists "Slip Copy" before the WL number; court with a division; docket label in capitals)');
+    }
+  }
   // Real saved Westlaw pages (kept out of git: test pages/); skipped when absent
   const RP = { article: 'MARKS, MORALS, AND MARKETS _ Secondary Sources _ National _ Westlaw Advantage', case: 'Fletcher v. Experian Information Solutions, Incorporated _ Cases _ Texas _ Westlaw Advantage', statute: '§ 50-f. Right of publicity _ Statutes _ New York _ Westlaw Advantage', list: 'Search Results _ ai hallucination _ Westlaw Advantage' };
   const rp = async k => { const r = await fetch('../test pages/' + encodeURIComponent(RP[k] + (k === 'article' ? '.htm' : '.html')), { cache: 'no-store' }); return r.ok ? new DOMParser().parseFromString(await r.text(), 'text/html') : null; };

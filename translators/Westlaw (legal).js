@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-10-13 18:29:29"
+	"lastUpdated": "2026-11-22 16:29:36"
 }
 
 /*
@@ -181,7 +181,7 @@ var CIRCUITS = { First: '1st', Second: '2d', Third: '3d', Fourth: '4th', Fifth: 
 // A court name as the sites print it -> its Bluebook abbreviation; unrecognised names are returned as given.
 //   "United States Court of Appeals, Fifth Circuit." -> "5th Cir."    "United States District Court, E.D. Texas." -> "E.D. Tex."
 function abbrevCourt(name) {
-	var n = squash(name).replace(/[.,;\s]+$/, ''), m, div, st;
+	var n = squash(name).replace(/[.,;\s]+$/, '').replace(/,\s*[A-Z][A-Za-z. ]*? Division$/, ''), m, div, st; // "N.D. Mississippi, Aberdeen Division"
 	if (/^(?:the )?(?:United States|U\.S\.) Supreme Court$|^Supreme Court of the United States$/i.test(n)) return 'U.S.';
 	if ((m = /Court of Appeals(?:,| for the)? (?:the )?(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|Eleventh|District of Columbia|Federal) Circuit/i.exec(n))) {
 		return CIRCUITS[m[1].replace(/^./, function (c) {
@@ -497,7 +497,12 @@ function findDocket(text) {
 	var re = /\b((?:Civil Action |Civ\. ?(?:A\. )?|Case |Docket |Cause )?Nos?\.?\s*[A-Za-z0-9][\w:\-\u2013./]*(?:\s*(?:,|and|&)\s*\d[\w:\-\u2013./]*)*)/gi, m;
 	text = squash(text);
 	while ((m = re.exec(text))) {
-		if (/\d/.test(m[1])) return m[1].replace(/[,;.]+$/, '');
+		// an all-capitals label ("CIVIL ACTION NO. 1:24-CV-218") is set in capitals only for display; the number is kept as printed
+		if (/\d/.test(m[1])) return m[1].replace(/[,;.]+$/, '').replace(/^([A-Z][A-Z. ]*?\s)?NOS?\.?(?=\s)/, function (x, l) {
+			return (l ? l.replace(/\b([A-Z])([A-Z]+)/g, function (w, a, b) {
+				return a + b.toLowerCase();
+			}) : '') + 'No.';
+		});
 	}
 	return '';
 }
@@ -605,6 +610,14 @@ function isListURL(url) {
 	return /\/(?:Search\/(?:Results|ResultList|Home)|Browse\/|Folders?\/|History)/i.test(url) || /[?&]listSource=Search/i.test(url);
 }
 
+// The header lists a case's citations one per line; a slip opinion's first is the label "Slip Copy" and the WL number follows
+function citeLine(cites) {
+	for (var i = 0; i < cites.length; i++) {
+		if (parseBareCite(cites[i])) return cites[i];
+	}
+	return cites[0] || '';
+}
+
 function readPage(doc) {
 	var body = doc.querySelector('#co_document') || doc.querySelector('#co_docContentMain') || doc.querySelector('main') || doc.body;
 	var cites = [], nodes = doc.querySelectorAll('#co_docHeaderCitation li[id^="cite"]');
@@ -615,7 +628,7 @@ function readPage(doc) {
 		pageTitle: cleanTitle(doc.title),
 		title: cleanTitle(firstText(doc, TITLE_SEL)),
 		cites: cites,
-		cite: cites[0] || '',
+		cite: citeLine(cites),
 		court: firstText(doc, ['#courtline', '.co_courtLine']),
 		date: firstText(doc, ['#filedate', '#effectiveDate', '.co_dateLine']),
 		author: firstText(doc, ['#author']),

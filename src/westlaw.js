@@ -14,6 +14,14 @@ function isListURL(url) {
 	return /\/(?:Search\/(?:Results|ResultList|Home)|Browse\/|Folders?\/|History)/i.test(url) || /[?&]listSource=Search/i.test(url);
 }
 
+// The header lists a case's citations one per line; a slip opinion's first is the label "Slip Copy" and the WL number follows
+function citeLine(cites) {
+	for (var i = 0; i < cites.length; i++) {
+		if (parseBareCite(cites[i])) return cites[i];
+	}
+	return cites[0] || '';
+}
+
 function readPage(doc) {
 	var body = doc.querySelector('#co_document') || doc.querySelector('#co_docContentMain') || doc.querySelector('main') || doc.body;
 	var cites = [], nodes = doc.querySelectorAll('#co_docHeaderCitation li[id^="cite"]');
@@ -24,7 +32,7 @@ function readPage(doc) {
 		pageTitle: cleanTitle(doc.title),
 		title: cleanTitle(firstText(doc, TITLE_SEL)),
 		cites: cites,
-		cite: cites[0] || '',
+		cite: citeLine(cites),
 		court: firstText(doc, ['#courtline', '.co_courtLine']),
 		date: firstText(doc, ['#filedate', '#effectiveDate', '.co_dateLine']),
 		author: firstText(doc, ['#author']),

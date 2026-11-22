@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-10-13 20:52:47"
+	"lastUpdated": "2026-11-22 16:29:21"
 }
 
 /*
@@ -70,7 +70,7 @@ var CIRCUITS = { First: '1st', Second: '2d', Third: '3d', Fourth: '4th', Fifth: 
 // A court name as the sites print it -> its Bluebook abbreviation; unrecognised names are returned as given.
 //   "United States Court of Appeals, Fifth Circuit." -> "5th Cir."    "United States District Court, E.D. Texas." -> "E.D. Tex."
 function abbrevCourt(name) {
-	var n = squash(name).replace(/[.,;\s]+$/, ''), m, div, st;
+	var n = squash(name).replace(/[.,;\s]+$/, '').replace(/,\s*[A-Z][A-Za-z. ]*? Division$/, ''), m, div, st; // "N.D. Mississippi, Aberdeen Division"
 	if (/^(?:the )?(?:United States|U\.S\.) Supreme Court$|^Supreme Court of the United States$/i.test(n)) return 'U.S.';
 	if ((m = /Court of Appeals(?:,| for the)? (?:the )?(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|Eleventh|District of Columbia|Federal) Circuit/i.exec(n))) {
 		return CIRCUITS[m[1].replace(/^./, function (c) {
