@@ -111,6 +111,17 @@
               "strict_max_version": "10.0.*"
             }
           }
+        },
+        {
+          "version": "0.4.1",
+          "update_link": "https://github.com/jnsheff/zotero-legal-translators/releases/download/v0.4.1/zotero-legal-translators.xpi",
+          "update_hash": "sha256:3d42e1d112ba5ef97340253b2b58596626dabdb82f05b2175c56da2d3df16f2f",
+          "applications": {
+            "zotero": {
+              "strict_min_version": "8.999",
+              "strict_max_version": "10.0.*"
+            }
+          }
         }
       ]
     }
