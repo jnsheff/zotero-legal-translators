@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-11-22 16:29:21"
+	"lastUpdated": "2026-11-22 16:41:32"
 }
 
 /*
@@ -87,6 +87,7 @@ function abbrevCourt(name) {
 		st = STATES[squash(m[2]).replace(/^the State of /i, '')] || STATES['District of ' + squash(m[2])];
 	}
 	if (div && st) return ((st === 'N.Y.' && div !== 'D.') || st === 'D.C.' ? div + st : div + ' ' + st);
+	if (/^(?:Court of Appeals of New York|New York Court of Appeals)$/i.test(n)) return 'N.Y.'; // the state's highest court (its "Supreme Court" is a trial court)
 	if ((m = /^Supreme Court of (?:the State of )?(.+)$/i.exec(n)) && STATES[m[1]] && m[1] !== 'New York') return STATES[m[1]];
 	// unrecognised: keep an abbreviation such as "2d Cir." as it is, drop the sentence period after a full name
 	return squash(name).split(' ').length > 3 ? n : squash(name);

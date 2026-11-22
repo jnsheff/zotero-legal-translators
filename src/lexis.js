@@ -25,6 +25,14 @@ function historyText(doc) {
 	return squash(out.join(' ')).replace(/\s*Annotations.*$/, '').slice(0, 3000); // the notes that follow cite other laws and other dates
 }
 
+// The case's parallel citations, in the Reporter line under the header: the one in force (a.SS_ActiveRptr) and the others, each with
+// its name in data-name ("26 N.Y.2d 219", "257 N.E.2d 870", "1970 N.Y. LEXIS 1478")
+function parallelCites(doc) {
+	var out = [], nodes = doc.querySelectorAll('a.SS_ActiveRptr[data-name], a.SS_Rptr[data-name]');
+	for (var i = 0; i < nodes.length; i++) out.push(squash(nodes[i].getAttribute('data-name')));
+	return out;
+}
+
 function readPage(doc) {
 	var infos = doc.querySelectorAll(INFO_SEL), info = [];
 	for (var i = 0; i < infos.length; i++) info.push(spacedText(infos[i]));
@@ -37,7 +45,7 @@ function readPage(doc) {
 	return {
 		pageTitle: cleanTitle(doc.title),
 		title: title,
-		cite: firstText(doc, CITE_SEL),
+		cite: preferredCite(parallelCites(doc)) || firstText(doc, CITE_SEL),
 		court: /\b(?:Court|Circuit|Tribunal|Judicial|Bankruptcy|Board|Commission)\b/i.test(court) && court.length < 120 ? court : '', // not "Current through ..." (codes, regulations)
 		date: date,
 		info: info.join('\n'),

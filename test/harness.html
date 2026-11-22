@@ -33,6 +33,10 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
   await w.T.doWeb(await w.doc('westlaw-case.html'), D);
   eq(pick(w.items[0], ['itemType', 'caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber', 'url', 'libraryCatalog']),
     { itemType: 'case', caseName: 'Feist Publications, Inc. v. Rural Telephone Service Co., Inc.', reporter: 'U.S.', reporterVolume: '499', firstPage: '340', court: 'U.S.', dateDecided: 'March 27, 1991', docketNumber: 'No. 89-1909', url: 'https://1.next.westlaw.com/Search/Results.html?query=find:499%20U.S.%20340#autoLogin', libraryCatalog: 'Westlaw' }, 'WL case item');
+  await w.T.doWeb(await w.doc('westlaw-case-parallel.html'), D);
+  eq(pick(w.items.pop(), ['reporter', 'reporterVolume', 'firstPage']), { reporter: 'N.E.3d', reporterVolume: '98', firstPage: '123' }, 'WL parallel cites: the regional reporter, not A.D.3d or N.Y.S.3d');
+  { const f = (await (await fetch('../fixtures/westlaw-case-parallel.html')).text()).replace('<li id="cite2">98 N.E.3d 123</li>', ''), d = new DOMParser().parseFromString(f, 'text/html');
+    await w.T.doWeb(d, D); eq(pick(w.items.pop(), ['reporter', 'reporterVolume', 'firstPage']), { reporter: 'N.Y.S.3d', reporterVolume: '92', firstPage: '400' }, 'WL parallel cites: New York with no N.E. gives N.Y.S., not A.D.'); }
   await w.T.doWeb(await w.doc('westlaw-case-notitle.html'), D);
   eq(pick(w.items[1], ['reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'docketNumber']), { reporter: 'WL', reporterVolume: '2025', firstPage: '458520', court: 'D. Del.', dateDecided: 'February 11, 2025', docketNumber: 'Civil Action No. 1:20-cv-613-SB' }, 'WL unpublished, header only');
   { const ex = x => JSON.parse(x.replace(/^mlzsync1:/, '')).extrafields;
@@ -326,6 +330,14 @@ const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]]));
       ['lexis ny regulation.html', { code: 'NYCRR', codeNumber: '22', section: '100.3', nameOfAct: 'A judge shall perform the duties of judicial office impartially and diligently', dateEnacted: 'June 1, 2026' }, 'real Lexis New York regulation (latest "effective" date in its History line)']]) {
       const r = await fetch('../test pages/' + encodeURIComponent(file), { cache: 'no-store' });
       if (r.ok) { const rd = new DOMParser().parseFromString(await r.text(), 'text/html'); eq(RX.T.detectWeb(rd, u), 'statute', label + ' detect'); await RX.T.doWeb(rd, u); eq(pick(RX.items.pop(), Object.keys(want)), want, label); }
+    }
+  }
+  { // a real Lexis case with parallel citations (kept out of git); skipped when absent
+    const BX = await load(LX), rb = await fetch('../test pages/boomer v. atlantic cement', { cache: 'no-store' });
+    if (rb.ok) {
+      const bd = new DOMParser().parseFromString(await rb.text(), 'text/html'), bu = 'https://plus.lexis.com/api/document?pdmfid=1&crid=abc';
+      eq(BX.T.detectWeb(bd, bu), 'case', 'real Lexis parallel-cite case detect'); await BX.T.doWeb(bd, bu);
+      eq(pick(BX.items.pop(), ['caseName', 'reporter', 'reporterVolume', 'firstPage', 'court', 'dateDecided', 'extra']), { caseName: 'Boomer v. Atlantic Cement Co.', reporter: 'N.E.2d', reporterVolume: '257', firstPage: '870', court: 'N.Y.', dateDecided: 'March 4, 1970', extra: 'mlzsync1:{"extrafields":{"jurisdiction":"005us:nyUnited States|US|New York","filingDate":"March 4, 1970"}}' }, 'real Lexis parallel-cite case: N.E.2d, not the active N.Y.2d');
     }
   }
   { // a real slip opinion (kept out of git); skipped when absent

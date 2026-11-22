@@ -161,6 +161,7 @@ function abbrevCourt(name) {
 		st = STATES[squash(m[2]).replace(/^the State of /i, '')] || STATES['District of ' + squash(m[2])];
 	}
 	if (div && st) return ((st === 'N.Y.' && div !== 'D.') || st === 'D.C.' ? div + st : div + ' ' + st);
+	if (/^(?:Court of Appeals of New York|New York Court of Appeals)$/i.test(n)) return 'N.Y.'; // the state's highest court (its "Supreme Court" is a trial court)
 	if ((m = /^Supreme Court of (?:the State of )?(.+)$/i.exec(n)) && STATES[m[1]] && m[1] !== 'New York') return STATES[m[1]];
 	// unrecognised: keep an abbreviation such as "2d Cir." as it is, drop the sentence period after a full name
 	return squash(name).split(' ').length > 3 ? n : squash(name);
@@ -205,6 +206,28 @@ function parseBareCite(text) {
 	if (m) return { volume: m[1], reporter: m[2], page: m[3] };
 	m = /^(\d{1,4})\s+([A-Z][A-Za-z0-9.'&\u2019 ]*?)\s+(\d{1,5})$/.exec(text);
 	return m && /[.']/.test(m[2]) ? { volume: m[1], reporter: squash(m[2]), page: m[3] } : null;
+}
+
+// Bluebook (B10.1.3, T1) cites a state court's decision to the regional reporter when there is one, though the page may list a
+// state's own reporter first: "A.D.3d", "N.Y.S.3d", "Cal. Rptr. 3d" and "Ill. Dec." are not regional; these are
+function isRegionalReporter(reporter) {
+	return /^(?:A|N\.E|N\.W|P|S\.E|S\.W|So)\.(?:\s?[23]d)?$/.test(squash(reporter));
+}
+
+// Which of a case's parallel citations to import. A page lists them in its own order (a slip opinion's first Westlaw line is the label
+// "Slip Copy"); a state court's decision is cited to the regional reporter (Bluebook) even where the state's own reporter comes first.
+function preferredCite(cites) {
+	var i, b;
+	for (i = 0; i < cites.length; i++) {
+		if ((b = parseBareCite(cites[i])) && isRegionalReporter(b.reporter)) return cites[i];
+	}
+	for (i = 0; i < cites.length; i++) {
+		if ((b = parseBareCite(cites[i])) && /^N\.Y\.S\.(?:\s?[23]d)?$/.test(squash(b.reporter))) return cites[i]; // New York: N.Y.S. over A.D. when no N.E.
+	}
+	for (i = 0; i < cites.length; i++) {
+		if (parseBareCite(cites[i])) return cites[i];
+	}
+	return cites[0] || '';
 }
 
 // ---- Jurisdictions ---------------------------------------------------------------------------------------------

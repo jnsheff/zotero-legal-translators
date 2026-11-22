@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2026-11-22 16:29:37"
+	"lastUpdated": "2026-11-22 16:41:32"
 }
 
 /*
@@ -198,6 +198,7 @@ function abbrevCourt(name) {
 		st = STATES[squash(m[2]).replace(/^the State of /i, '')] || STATES['District of ' + squash(m[2])];
 	}
 	if (div && st) return ((st === 'N.Y.' && div !== 'D.') || st === 'D.C.' ? div + st : div + ' ' + st);
+	if (/^(?:Court of Appeals of New York|New York Court of Appeals)$/i.test(n)) return 'N.Y.'; // the state's highest court (its "Supreme Court" is a trial court)
 	if ((m = /^Supreme Court of (?:the State of )?(.+)$/i.exec(n)) && STATES[m[1]] && m[1] !== 'New York') return STATES[m[1]];
 	// unrecognised: keep an abbreviation such as "2d Cir." as it is, drop the sentence period after a full name
 	return squash(name).split(' ').length > 3 ? n : squash(name);
@@ -227,6 +228,28 @@ function parseBareCite(text) {
 	if (m) return { volume: m[1], reporter: m[2], page: m[3] };
 	m = /^(\d{1,4})\s+([A-Z][A-Za-z0-9.'&\u2019 ]*?)\s+(\d{1,5})$/.exec(text);
 	return m && /[.']/.test(m[2]) ? { volume: m[1], reporter: squash(m[2]), page: m[3] } : null;
+}
+
+// Bluebook (B10.1.3, T1) cites a state court's decision to the regional reporter when there is one, though the page may list a
+// state's own reporter first: "A.D.3d", "N.Y.S.3d", "Cal. Rptr. 3d" and "Ill. Dec." are not regional; these are
+function isRegionalReporter(reporter) {
+	return /^(?:A|N\.E|N\.W|P|S\.E|S\.W|So)\.(?:\s?[23]d)?$/.test(squash(reporter));
+}
+
+// Which of a case's parallel citations to import. A page lists them in its own order (a slip opinion's first Westlaw line is the label
+// "Slip Copy"); a state court's decision is cited to the regional reporter (Bluebook) even where the state's own reporter comes first.
+function preferredCite(cites) {
+	var i, b;
+	for (i = 0; i < cites.length; i++) {
+		if ((b = parseBareCite(cites[i])) && isRegionalReporter(b.reporter)) return cites[i];
+	}
+	for (i = 0; i < cites.length; i++) {
+		if ((b = parseBareCite(cites[i])) && /^N\.Y\.S\.(?:\s?[23]d)?$/.test(squash(b.reporter))) return cites[i]; // New York: N.Y.S. over A.D. when no N.E.
+	}
+	for (i = 0; i < cites.length; i++) {
+		if (parseBareCite(cites[i])) return cites[i];
+	}
+	return cites[0] || '';
 }
 
 // ---- Jurisdictions ---------------------------------------------------------------------------------------------
@@ -685,6 +708,14 @@ function historyText(doc) {
 	return squash(out.join(' ')).replace(/\s*Annotations.*$/, '').slice(0, 3000); // the notes that follow cite other laws and other dates
 }
 
+// The case's parallel citations, in the Reporter line under the header: the one in force (a.SS_ActiveRptr) and the others, each with
+// its name in data-name ("26 N.Y.2d 219", "257 N.E.2d 870", "1970 N.Y. LEXIS 1478")
+function parallelCites(doc) {
+	var out = [], nodes = doc.querySelectorAll('a.SS_ActiveRptr[data-name], a.SS_Rptr[data-name]');
+	for (var i = 0; i < nodes.length; i++) out.push(squash(nodes[i].getAttribute('data-name')));
+	return out;
+}
+
 function readPage(doc) {
 	var infos = doc.querySelectorAll(INFO_SEL), info = [];
 	for (var i = 0; i < infos.length; i++) info.push(spacedText(infos[i]));
@@ -697,7 +728,7 @@ function readPage(doc) {
 	return {
 		pageTitle: cleanTitle(doc.title),
 		title: title,
-		cite: firstText(doc, CITE_SEL),
+		cite: preferredCite(parallelCites(doc)) || firstText(doc, CITE_SEL),
 		court: /\b(?:Court|Circuit|Tribunal|Judicial|Bankruptcy|Board|Commission)\b/i.test(court) && court.length < 120 ? court : '', // not "Current through ..." (codes, regulations)
 		date: date,
 		info: info.join('\n'),
